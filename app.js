@@ -1328,6 +1328,11 @@ function startWebcam() {
       videoStream = stream;
       videoElement.srcObject = stream;
       
+      // Force webcam playback and handle browser autoplay permissions
+      videoElement.play()
+        .then(() => console.log("Webcam video element is playing successfully."))
+        .catch(err => console.error("Webcam video element playback blocked/failed:", err));
+      
       webcamActive = true;
       camToggleBtn.textContent = "STOP MONITORING";
       camToggleBtn.className = "brutal-btn btn-pink";
@@ -1363,6 +1368,9 @@ function stopWebcam() {
   if (videoStream) {
     videoStream.getTracks().forEach(track => track.stop());
   }
+  
+  videoElement.pause();
+  videoElement.srcObject = null;
   
   webcamActive = false;
   camToggleBtn.textContent = "ACTIVATE FOCUS CAM";

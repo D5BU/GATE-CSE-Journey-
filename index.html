@@ -121,7 +121,7 @@
             <span class="card-label">AEGIS FOCUS CAM MONITOR</span>
             <div class="focus-cam-body">
               <div class="cam-preview-wrapper" id="cam-status-border">
-                <video id="hidden-video" style="display: none;" autoplay playsinline></video>
+                <video id="hidden-video" style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; left: -9999px;" autoplay playsinline muted></video>
                 <canvas id="hidden-canvas" style="display: none;"></canvas>
                 <!-- Preview Canvas displaying tracking points -->
                 <canvas id="cam-preview-canvas" class="cam-preview-canvas" width="160" height="120"></canvas>
