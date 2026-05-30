@@ -1104,6 +1104,7 @@ function renderBulletinFeed(data) {
 // ONBOARDING TOUR SETUP
 let currentTourStep = 0;
 const onboardingOverlay = document.getElementById('onboarding-overlay');
+const onboardingBackdrop = document.getElementById('onboarding-backdrop');
 const nextBtn = document.getElementById('tour-next-btn');
 const skipBtn = document.getElementById('tour-skip-btn');
 const stepCounter = document.getElementById('tour-step-counter');
@@ -1159,6 +1160,7 @@ function initOnboardingTour() {
 function startTour() {
   currentTourStep = 0;
   onboardingOverlay.classList.add('active');
+  if (onboardingBackdrop) onboardingBackdrop.classList.add('active');
   showTourStep(0);
 }
 
@@ -1207,6 +1209,7 @@ skipBtn.addEventListener('click', () => {
 function completeTour() {
   document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
   onboardingOverlay.classList.remove('active');
+  if (onboardingBackdrop) onboardingBackdrop.classList.remove('active');
   localStorage.setItem('gateQuest_tourCompleted', 'true');
   switchTab('overview'); // Return to main page
   showToast('TOUR COMPLETED', 'Welcome aboard! Log your study hours to initialize recommendations.', 'cyan');
