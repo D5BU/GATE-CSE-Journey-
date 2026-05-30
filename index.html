@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#ff2d55">
-  <meta name="description" content="Premium offline-first progress tracker and local AI coach for GATE Computer Science preparation.">
+  <meta name="description" content="Premium offline-first progress tracker, visual AI advisor, and dynamic exam bulletin for GATE CSE preparation.">
 </head>
 <body>
   <!-- Animated Background Mesh Shapes -->
@@ -24,10 +24,9 @@
       <span class="logo-text">GATE QUEST</span>
     </div>
     <nav class="nav-links">
-      <button class="nav-btn active" data-tab="overview">OVERVIEW</button>
-      <button class="nav-btn" data-tab="syllabus">SYLLABUS</button>
-      <button class="nav-btn" data-tab="metrics">METRICS</button>
-      <button class="nav-btn" data-tab="coach">AI COACH</button>
+      <button class="nav-btn active" data-tab="overview" id="nav-overview">OVERVIEW</button>
+      <button class="nav-btn" data-tab="syllabus" id="nav-syllabus">SYLLABUS</button>
+      <button class="nav-btn" data-tab="metrics" id="nav-metrics">METRICS & ADVISOR</button>
     </nav>
     <button class="icon-nav-btn" id="install-btn" title="Install Offline PWA">
       <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -42,19 +41,19 @@
     <!-- Hero Branding Section -->
     <section class="hero-section">
       <div class="shimmer-badge">
-        <span class="badge-text">OFFLINE-FIRST GATE CSE COMPANION</span>
+        <span class="badge-text">ADAPTIVE COGNITIVE COMPANION</span>
       </div>
       <h1 class="hero-title">GATE QUEST</h1>
       <div class="subtitle-row">
         <div class="sub-line"></div>
-        <h2 class="hero-subtitle">VETERAN MENTORSHIP ENGINE</h2>
+        <h2 class="hero-subtitle">VETERAN INSIGHT MATRIX</h2>
         <div class="sub-line"></div>
       </div>
     </section>
 
     <!-- SECTION: OVERVIEW -->
     <div id="tab-overview" class="tab-content active">
-      <div class="overview-grid">
+      <div class="overview-grid" id="tour-overview-stats">
         <!-- Card 1: Study Streak -->
         <div class="glass-card streak-card" data-accent="pink">
           <div class="card-icon-container">
@@ -62,20 +61,20 @@
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
             </svg>
           </div>
-          <span class="card-label">CURRENT STUDY STREAK</span>
+          <span class="card-label">STUDY STREAK</span>
           <h3 class="card-value" id="streak-value">0 DAYS</h3>
-          <p class="card-desc" id="streak-desc">Keep studying daily to maintain your momentum.</p>
+          <p class="card-desc" id="streak-desc">Log your study session below to start a study streak.</p>
         </div>
 
         <!-- Card 2: Syllabus Mastery -->
         <div class="glass-card progress-card" data-accent="cyan">
           <div class="card-icon-container">
             <svg class="card-icon icon-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx='12' cy='12' r='10'/>
-              <path d='M12 2a10 10 0 0 1 10 10'/>
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a10 10 0 0 1 10 10"/>
             </svg>
           </div>
-          <span class="card-label">SYLLABUS COMPLETION</span>
+          <span class="card-label">SYLLABUS MASTERY</span>
           <h3 class="card-value" id="progress-value">0.0%</h3>
           <p class="card-desc" id="progress-desc">0 of 0 topics checked off.</p>
         </div>
@@ -90,100 +89,145 @@
           </div>
           <span class="card-label">PYQ ACCURACY SCORE</span>
           <h3 class="card-value" id="accuracy-value">0%</h3>
-          <p class="card-desc" id="accuracy-desc">Log your scores inside the syllabus tab.</p>
-        </div>
-
-        <!-- Card 4: Next Focus Topic -->
-        <div class="glass-card focus-card" data-accent="pink">
-          <div class="card-icon-container">
-            <svg class="card-icon icon-pink" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <circle cx="12" cy="12" r="6"/>
-              <circle cx="12" cy="12" r="2"/>
-            </svg>
-          </div>
-          <span class="card-label">AI RECOMMENDED FOCUS</span>
-          <h3 class="card-value text-glow-pink" id="focus-value" style="font-size: 1.5rem; word-break: break-word;">NOT AVAIL</h3>
-          <p class="card-desc" id="focus-desc">Analyzing metrics...</p>
+          <p class="card-desc" id="accuracy-desc">Tracked across your practice log.</p>
         </div>
       </div>
 
-      <!-- Quick Action Logs -->
-      <div class="glass-card overview-actions">
-        <span class="card-label">QUICK WORK LOG</span>
-        <div class="quick-log-row">
-          <div class="log-field">
-            <label for="log-subject">Subject</label>
-            <select id="log-subject" class="glass-select"></select>
+      <!-- Overview Two-Column Sub-Layout -->
+      <div class="overview-details-layout">
+        <!-- Left: Quick Work Log -->
+        <div class="glass-card overview-actions" id="tour-work-log">
+          <span class="card-label">QUICK WORK LOG</span>
+          <div class="quick-log-row">
+            <div class="log-field">
+              <label for="log-subject">Subject</label>
+              <select id="log-subject" class="glass-select"></select>
+            </div>
+            <div class="log-field">
+              <label for="log-hours">Study Time (Hours)</label>
+              <input type="number" id="log-hours" class="glass-input" min="0.1" step="0.1" value="1.0">
+            </div>
+            <div class="log-field">
+              <label for="log-accuracy">Practice Accuracy (%)</label>
+              <input type="number" id="log-accuracy" class="glass-input" min="0" max="100" value="70">
+            </div>
+            <button class="btn btn-primary" id="save-log-btn">LOG SESSION</button>
           </div>
-          <div class="log-field">
-            <label for="log-hours">Study Time (Hours)</label>
-            <input type="number" id="log-hours" class="glass-input" min="0.1" step="0.1" value="1.0">
+        </div>
+
+        <!-- Right: Countdown & Bulletin Board -->
+        <div class="bulletin-and-countdown-container">
+          <!-- Countdown Card -->
+          <div class="glass-card countdown-card" data-accent="pink" id="tour-countdown">
+            <span class="card-label">COUNTDOWN TO GATE 2027</span>
+            <div class="countdown-display">
+              <div class="countdown-unit">
+                <span class="countdown-val" id="cd-days">00</span>
+                <span class="countdown-lbl">DAYS</span>
+              </div>
+              <div class="countdown-colon">:</div>
+              <div class="countdown-unit">
+                <span class="countdown-val" id="cd-hours">00</span>
+                <span class="countdown-lbl">HRS</span>
+              </div>
+              <div class="countdown-colon">:</div>
+              <div class="countdown-unit">
+                <span class="countdown-val" id="cd-mins">00</span>
+                <span class="countdown-lbl">MINS</span>
+              </div>
+              <div class="countdown-colon">:</div>
+              <div class="countdown-unit">
+                <span class="countdown-val" id="cd-secs">00</span>
+                <span class="countdown-lbl">SECS</span>
+              </div>
+            </div>
           </div>
-          <button class="btn btn-primary" id="save-log-btn">LOG SESSION</button>
+
+          <!-- Bulletin Board Card -->
+          <div class="glass-card bulletin-card" data-accent="cyan" id="tour-bulletin">
+            <div class="bulletin-header">
+              <span class="card-label">GATE OFFICIAL BULLETIN</span>
+              <span class="pulse-dot"></span>
+            </div>
+            <div class="bulletin-feed" id="bulletin-feed-container">
+              <!-- Populated dynamically via app.js -->
+              <div class="bulletin-loading">Syncing official announcements...</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- SECTION: SYLLABUS -->
     <div id="tab-syllabus" class="tab-content">
-      <div class="section-header-row">
+      <div class="section-header-row" id="tour-syllabus-header">
         <span class="section-label">SUBJECTS ACCORDION</span>
         <p class="section-desc">Log your progress on topics and practice performance on Previous Year Questions (PYQs).</p>
       </div>
-      <div id="syllabus-accordion" class="accordion-container">
+      <div id="syllabus-accordion" class="accordion-container" id="tour-syllabus-accordion">
         <!-- Populated dynamically via app.js -->
       </div>
     </div>
 
-    <!-- SECTION: METRICS -->
+    <!-- SECTION: METRICS & ADVISOR -->
     <div id="tab-metrics" class="tab-content">
       <div class="metrics-container">
-        <!-- Left: Weakness Radar Chart -->
-        <div class="glass-card chart-card">
-          <span class="card-label">WEAKNESS RADAR & SUBJECT WEIGHTS</span>
-          <div class="canvas-container">
-            <canvas id="radarChart" width="400" height="400"></canvas>
+        <!-- Left: Charts Layout -->
+        <div class="metrics-left-column">
+          <!-- Weakness Radar Chart -->
+          <div class="glass-card chart-card" id="tour-radar-chart">
+            <span class="card-label">WEAKNESS RADAR & SUBJECT WEIGHTS</span>
+            <div class="canvas-container">
+              <canvas id="radarChart" width="400" height="400"></canvas>
+            </div>
+            <div class="chart-legend">
+              <div class="legend-item"><span class="legend-color color-pink"></span> Subject Weight (Marks)</div>
+              <div class="legend-item"><span class="legend-color color-cyan"></span> Your Mastery Level (%)</div>
+            </div>
           </div>
-          <div class="chart-legend">
-            <div class="legend-item"><span class="legend-color color-pink"></span> Subject Weight (Marks)</div>
-            <div class="legend-item"><span class="legend-color color-cyan"></span> Your Mastery Level (%)</div>
+
+          <!-- Consistency Heatmap -->
+          <div class="glass-card chart-card" id="tour-heatmap">
+            <span class="card-label">STUDY CONSISTENCY HEATMAP</span>
+            <div class="canvas-container">
+              <canvas id="heatmap" width="550" height="150"></canvas>
+            </div>
+            <p class="card-desc" style="text-align: center; margin-top: 10px;">
+              Consistency builds rank. Red squares indicate intensive study slots.
+            </p>
           </div>
         </div>
 
-        <!-- Right: Consistency Heatmap -->
-        <div class="glass-card chart-card">
-          <span class="card-label">STUDY CONSISTENCY HEATMAP</span>
-          <div class="canvas-container">
-            <canvas id="heatmap" width="550" height="150"></canvas>
-          </div>
-          <p class="card-desc" style="text-align: center; margin-top: 10px;">
-            Heatmap highlights your daily study hours over the past weeks. Consistency builds rank.
-          </p>
-        </div>
-      </div>
-    </div>
+        <!-- Right: AI Veteran Advisor Board -->
+        <div class="metrics-right-column" id="tour-advisor">
+          <div class="glass-card advisor-board" data-accent="lime">
+            <div class="advisor-header">
+              <span class="card-label">AI VETERAN ADVISOR</span>
+              <span class="advisor-status-badge">ONLINE-COGNITIVE</span>
+            </div>
+            
+            <!-- Focus Recommendations Block -->
+            <div class="advisor-block">
+              <h4 class="advisor-block-title">PRIORITY SYLLABUS TARGETS</h4>
+              <div class="priority-list" id="advisor-priorities">
+                <!-- Populated dynamically via app.js -->
+              </div>
+            </div>
 
-    <!-- SECTION: AI COACH -->
-    <div id="tab-coach" class="tab-content">
-      <div class="coach-container">
-        <div class="glass-card coach-console">
-          <div class="console-header">
-            <div class="console-dots">
-              <span class="dot-red"></span>
-              <span class="dot-yellow"></span>
-              <span class="dot-green"></span>
+            <!-- Profile & Learning Metrics Block -->
+            <div class="advisor-block">
+              <h4 class="advisor-block-title">COGNITIVE BEHAVIOR PROFILE</h4>
+              <div class="diagnostic-grid" id="advisor-diagnostics">
+                <!-- Populated dynamically via app.js -->
+              </div>
             </div>
-            <span class="console-title">VETERAN COACH LOG</span>
-            <button class="console-clear-btn" id="clear-console-btn">CLEAR</button>
-          </div>
-          <div class="console-body" id="console-logs">
-            <!-- Simulated dialogs populate here -->
-            <div class="console-line system-line">
-              <span class="prefix">[SYSTEM]:</span> GATE Quest Offline AI Engine initialized. Type <span class="highlight-cyan">/help</span> or ask a question in the command bar.
-            </div>
-            <div class="console-line coach-line">
-              <span class="prefix">[VETERAN_COACH]:</span> Welcome aspirant. I am your GATE veteran advisor. I analyze your subject weightages, study streak, and topic accuracy to guide you in maximizing your rank. Enter <span class="highlight-pink">/focus</span> to get your target priority list.
+
+            <!-- Warning and Alert Logs Block -->
+            <div class="advisor-block">
+              <h4 class="advisor-block-title">CRITICAL WARNING SYSTEMS</h4>
+              <div class="warning-list" id="advisor-warnings">
+                <!-- Populated dynamically via app.js -->
+              </div>
             </div>
           </div>
         </div>
@@ -193,21 +237,12 @@
   </main>
 
   <!-- Bottom Floating Command Bar -->
-  <footer class="footer-command-bar">
-    <div class="command-bar-container">
-      <div class="command-input-wrapper">
-        <input type="text" id="command-input" placeholder="Ask Veteran Coach (e.g. /focus, /streak, DBMS accuracy, or study advice)..." class="command-input">
-      </div>
-      <button class="command-zap-btn" id="command-zap-btn" title="Trigger Veteran AI Advice">
-        <svg class="zap-icon" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M13 10V3L4 14H11V21L20 10H13Z"/>
-        </svg>
-      </button>
-    </div>
+  <footer class="footer-status-bar">
     <div class="status-row">
-      <span class="status-item">LATENCY: <span id="status-latency">1.2ms</span></span>
+      <span class="status-item">LATENCY: <span id="status-latency">0.8ms</span></span>
       <span class="status-item">NODE: <span id="status-node">OFFLINE-LOCAL</span></span>
       <span class="status-item active-status"><span class="pulse-dot"></span> STATUS: STABLE</span>
+      <span class="status-item reset-tour-item" id="reset-tour-btn" title="Restart Onboarding Tour">RESTART TOUR</span>
     </div>
   </footer>
 
@@ -218,6 +253,28 @@
 
   <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
+
+  <!-- Interactive Onboarding Walkthrough Overlay -->
+  <div id="onboarding-overlay" class="onboarding-overlay">
+    <div class="onboarding-card glass-card" data-accent="cyan">
+      <div class="onboarding-header">
+        <div class="onboarding-dots">
+          <span class="dot-red"></span>
+          <span class="dot-yellow"></span>
+          <span class="dot-green"></span>
+        </div>
+        <span class="onboarding-title" id="tour-step-counter">STEP 1 OF 5</span>
+      </div>
+      <div class="onboarding-body">
+        <h3 class="onboarding-step-heading" id="tour-step-heading">Welcome to GATE Quest</h3>
+        <p class="onboarding-step-desc" id="tour-step-desc">This is your premium offline-first progress tracker and Local AI Advisor designed to maximize your GATE Computer Science rank.</p>
+      </div>
+      <div class="onboarding-footer">
+        <button class="onboarding-btn btn-skip" id="tour-skip-btn">SKIP TOUR</button>
+        <button class="onboarding-btn btn-next" id="tour-next-btn">NEXT STEP</button>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

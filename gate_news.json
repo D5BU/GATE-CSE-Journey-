@@ -1,0 +1,38 @@
+{
+  "version": "2026.1",
+  "examDate": "2027-02-06T09:00:00",
+  "announcements": [
+    {
+      "id": "gate_exam_date",
+      "date": "2026-05-30",
+      "title": "GATE 2027 Exam Date Announced",
+      "description": "The official GATE 2027 Computer Science (CSE) examination is scheduled for February 6, 2027.",
+      "severity": "critical",
+      "link": "https://gate.iitkgp.ac.in"
+    },
+    {
+      "id": "gate_registration_alert",
+      "date": "2026-05-28",
+      "title": "Registration Portal Opening in August",
+      "description": "Official registrations for GATE 2027 are expected to commence in the last week of August 2026.",
+      "severity": "warning",
+      "link": "https://gate.iitkgp.ac.in"
+    },
+    {
+      "id": "gate_syllabus_announcement",
+      "date": "2026-05-25",
+      "title": "GATE CSE Syllabus Confirmed",
+      "description": "The organizing institute has confirmed the CSE syllabus remains identical to last year. No structural changes.",
+      "severity": "info",
+      "link": "https://gate.iitkgp.ac.in"
+    },
+    {
+      "id": "antigravity_launch",
+      "date": "2026-05-20",
+      "title": "GATE Quest Integrated Successfully",
+      "description": "Welcome to your local AI Progress Tracker. Start checking off topics in the Syllabus tab to receive personalized advice.",
+      "severity": "info",
+      "link": ""
+    }
+  ]
+}

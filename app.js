@@ -2,12 +2,12 @@
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker Registered Successfully', reg.scope))
-      .catch(err => console.log('Service Worker Registration Failed', err));
+      .then(reg => console.log('Service Worker Registered', reg.scope))
+      .catch(err => console.log('Service Worker Failed', err));
   });
 }
 
-// Handle PWA Installation Prompt
+// Handle PWA Installation
 let deferredPrompt;
 const installBtn = document.getElementById('install-btn');
 
@@ -21,14 +21,14 @@ installBtn.addEventListener('click', async () => {
   if (deferredPrompt) {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response to install prompt: ${outcome}`);
+    console.log(`User installation choice: ${outcome}`);
     deferredPrompt = null;
     installBtn.style.display = 'none';
   }
 });
 
-// DEFAULT SUBJECTS DATA (Fallback and Local Initial State)
-const DEFAULT_SUBJECTS = [
+// SUBJECTS METADATA Fallback
+const SUBJECTS = [
   {
     "id": "Discrete_Mathematics",
     "name": "Discrete Mathematics",
@@ -84,10 +84,10 @@ const DEFAULT_SUBJECTS = [
     "weightage": 7,
     "color": "#c1ff72",
     "topics": [
-      "Programming in C (Pointers, Recursion, Parameter Passing)",
+      "Programming in C (Pointers, Scope, Array allocation)",
+      "Recursion & Complexity analysis",
       "Arrays, Stacks, Queues, Linked Lists",
       "Trees & Binary Search Trees",
-      "Binary Heaps & Priority Queues",
       "Graph Representations"
     ]
   },
@@ -99,7 +99,7 @@ const DEFAULT_SUBJECTS = [
     "topics": [
       "Asymptotic Complexity & Analysis",
       "Divide & Conquer, Greedy Algorithms",
-      "Dynamic Programming basics",
+      "Dynamic Programming fundamentals",
       "Graph Traversals (BFS, DFS, MST)",
       "Shortest Path Algorithms (Dijkstra, Bellman-Ford)"
     ]
@@ -123,9 +123,9 @@ const DEFAULT_SUBJECTS = [
     "color": "#00f2ff",
     "topics": [
       "Lexical Analysis & DFA Construction",
-      "Syntax Analysis (LL(1), LR(0), SLR, LALR, CLR Parsers)",
+      "Syntax Analysis (LL(1), LR, LALR Parsers)",
       "Syntax-Directed Translation & SDT schemas",
-      "Intermediate Code Generation (DAG, 3AC, SSA)",
+      "Intermediate Code Generation (3AC, SSA)",
       "Code Optimization & Runtime Environments"
     ]
   },
@@ -138,7 +138,7 @@ const DEFAULT_SUBJECTS = [
       "Processes, Threads, System Calls & IPC",
       "CPU Scheduling Algorithms",
       "Process Synchronization, Semaphores & Mutexes",
-      "Deadlock (Prevention, Avoidance - Banker's, Detection)",
+      "Deadlock (Prevention, Avoidance, Detection)",
       "Memory Management (Paging, Segmentation, Virtual Memory)",
       "File Systems & Disk Scheduling"
     ]
@@ -184,68 +184,67 @@ const DEFAULT_SUBJECTS = [
   }
 ];
 
-// STATE INITIALIZATION
-let subjectsData = [...DEFAULT_SUBJECTS];
-let userProgress = {}; // Key: "subjectId:topicIndex" -> Boolean
-let pyqScores = {};    // Key: "subjectId:topicIndex" -> Integer (0-100)
-let studyLogs = [];    // Array of objects: { date: "YYYY-MM-DD", subjectId: "...", hours: 1.5 }
+// STATE STATE STORAGE OBJECTS
+let userProgress = {}; // Key: "subId:idx" -> Boolean
+let pyqScores = {};    // Key: "subId:idx" -> Array of { score, timestamp }
+let studyLogs = [];    // Array of: { date, time, subjectId, hours, accuracy }
 let studyStreak = { count: 0, lastStudyDate: null };
 
-// LOAD FROM LOCAL STORAGE
+// LOAD & SAVE STATE
 function loadState() {
-  const savedProgress = localStorage.getItem('gateQuest_userProgress');
-  const savedScores = localStorage.getItem('gateQuest_pyqScores');
-  const savedLogs = localStorage.getItem('gateQuest_studyLogs');
-  const savedStreak = localStorage.getItem('gateQuest_streak');
-  const savedTrends = localStorage.getItem('gateQuest_subjectsData');
+  const progress = localStorage.getItem('gateQuest_userProgress');
+  const scores = localStorage.getItem('gateQuest_pyqScores_v2');
+  const logs = localStorage.getItem('gateQuest_studyLogs_v2');
+  const streak = localStorage.getItem('gateQuest_streak');
 
-  if (savedProgress) userProgress = JSON.parse(savedProgress);
-  if (savedScores) pyqScores = JSON.parse(savedScores);
-  if (savedLogs) studyLogs = JSON.parse(savedLogs);
-  if (savedStreak) studyStreak = JSON.parse(savedStreak);
-  if (savedTrends) subjectsData = JSON.parse(savedTrends);
+  if (progress) userProgress = JSON.parse(progress);
+  if (scores) pyqScores = JSON.parse(scores);
+  if (logs) studyLogs = JSON.parse(logs);
+  if (streak) studyStreak = JSON.parse(streak);
 }
 
-// SAVE TO LOCAL STORAGE
 function saveState() {
   localStorage.setItem('gateQuest_userProgress', JSON.stringify(userProgress));
-  localStorage.setItem('gateQuest_pyqScores', JSON.stringify(pyqScores));
-  localStorage.setItem('gateQuest_studyLogs', JSON.stringify(studyLogs));
+  localStorage.setItem('gateQuest_pyqScores_v2', JSON.stringify(pyqScores));
+  localStorage.setItem('gateQuest_studyLogs_v2', JSON.stringify(studyLogs));
   localStorage.setItem('gateQuest_streak', JSON.stringify(studyStreak));
 }
 
-// NAVIGATION TABS IMPLEMENTATION
+// TABS CONFIGURATION
 const navButtons = document.querySelectorAll('.nav-btn');
 const tabContents = document.querySelectorAll('.tab-content');
 
 navButtons.forEach(btn => {
   btn.addEventListener('click', () => {
-    const tabName = btn.getAttribute('data-tab');
-    
-    // Switch active state of nav button
-    navButtons.forEach(nb => nb.classList.remove('active'));
-    btn.classList.add('active');
-    
-    // Switch active state of tab page content
-    tabContents.forEach(tc => tc.classList.remove('active'));
-    document.getElementById(`tab-${tabName}`).classList.add('active');
-    
-    // Trigger chart redraw if switching to metrics tab
-    if (tabName === 'metrics') {
-      renderRadarChart();
-      renderHeatmap();
-    }
+    switchTab(btn.getAttribute('data-tab'));
   });
 });
 
-// DYNAMIC ACCORDION GENERATION (Syllabus page)
+function switchTab(tabName) {
+  navButtons.forEach(nb => {
+    if (nb.getAttribute('data-tab') === tabName) nb.classList.add('active');
+    else nb.classList.remove('active');
+  });
+  
+  tabContents.forEach(tc => {
+    if (tc.id === `tab-${tabName}`) tc.classList.add('active');
+    else tc.classList.remove('active');
+  });
+  
+  if (tabName === 'metrics') {
+    renderRadarChart();
+    renderHeatmap();
+    runAdaptiveAdvisor();
+  }
+}
+
+// DYNAMIC ACCORDION GENERATOR (Syllabus page)
 const accordionContainer = document.getElementById('syllabus-accordion');
 
 function generateSyllabusAccordion() {
   accordionContainer.innerHTML = '';
   
-  subjectsData.forEach((subject) => {
-    // Calculate subject metrics
+  SUBJECTS.forEach((subject) => {
     const totalTopics = subject.topics.length;
     let completedCount = 0;
     let totalAccuracySum = 0;
@@ -254,8 +253,11 @@ function generateSyllabusAccordion() {
     subject.topics.forEach((topic, index) => {
       const key = `${subject.id}:${index}`;
       if (userProgress[key]) completedCount++;
-      if (pyqScores[key] !== undefined) {
-        totalAccuracySum += pyqScores[key];
+      
+      const history = pyqScores[key];
+      if (history && history.length > 0) {
+        // Use the latest score for current accuracy index
+        totalAccuracySum += history[history.length - 1].score;
         scoredTopicsCount++;
       }
     });
@@ -263,7 +265,6 @@ function generateSyllabusAccordion() {
     const progressPercent = Math.round((completedCount / totalTopics) * 100);
     const avgAccuracy = scoredTopicsCount > 0 ? Math.round(totalAccuracySum / scoredTopicsCount) : 0;
     
-    // Create DOM element
     const item = document.createElement('div');
     item.className = 'accordion-item';
     item.id = `sub-card-${subject.id}`;
@@ -294,7 +295,9 @@ function generateSyllabusAccordion() {
             ${subject.topics.map((topic, index) => {
               const key = `${subject.id}:${index}`;
               const checked = userProgress[key] ? 'checked' : '';
-              const accuracyVal = pyqScores[key] !== undefined ? pyqScores[key] : 50;
+              
+              const history = pyqScores[key];
+              const accuracyVal = (history && history.length > 0) ? history[history.length - 1].score : 50;
               return `
                 <div class="topic-row">
                   <div class="topic-left">
@@ -319,15 +322,10 @@ function generateSyllabusAccordion() {
       </div>
     `;
     
-    // Add Click listener to Header to toggle Expand
     const header = item.querySelector('.accordion-header');
-    header.addEventListener('click', (e) => {
-      // Don't expand if user clicks inner elements directly, just standard toggling
+    header.addEventListener('click', () => {
       const isExpanded = item.classList.contains('expanded');
-      
-      // Close all others
       document.querySelectorAll('.accordion-item').forEach(ai => ai.classList.remove('expanded'));
-      
       if (!isExpanded) {
         item.classList.add('expanded');
       }
@@ -336,14 +334,12 @@ function generateSyllabusAccordion() {
     accordionContainer.appendChild(item);
   });
   
-  // Attach listeners to Checkboxes & Sliders
   attachInputsListeners();
 }
 
 function attachInputsListeners() {
-  // Checkbox interactions
   document.querySelectorAll('.topic-check').forEach(chk => {
-    chk.addEventListener('change', (e) => {
+    chk.addEventListener('change', () => {
       const subId = chk.getAttribute('data-sub');
       const idx = chk.getAttribute('data-idx');
       const key = `${subId}:${idx}`;
@@ -352,39 +348,44 @@ function attachInputsListeners() {
       saveState();
       updateDashboardStats();
       
-      // Trigger a toast notification
-      const subject = subjectsData.find(s => s.id === subId);
-      const topicName = subject.topics[idx];
-      showToast(chk.checked ? 'TOPIC COMPLETED' : 'TOPIC UNCHECKED', `"${topicName}" inside ${subject.name}`, chk.checked ? 'cyan' : 'pink');
-      
-      // Update local accordion metrics header values dynamically
+      const subject = SUBJECTS.find(s => s.id === subId);
+      showToast(chk.checked ? 'TOPIC COMPLETED' : 'TOPIC UNCHECKED', `"${subject.topics[idx]}" in ${subject.name}`, chk.checked ? 'cyan' : 'pink');
       updateAccordionHeader(subId);
     });
   });
 
-  // Slider accuracy adjustments
   document.querySelectorAll('.topic-slider').forEach(sld => {
     const valBadge = sld.nextElementSibling;
     
-    sld.addEventListener('input', (e) => {
+    sld.addEventListener('input', () => {
       valBadge.textContent = `${sld.value}%`;
     });
     
-    sld.addEventListener('change', (e) => {
+    sld.addEventListener('change', () => {
       const subId = sld.getAttribute('data-sub');
       const idx = sld.getAttribute('data-idx');
       const key = `${subId}:${idx}`;
+      const score = parseInt(sld.value);
       
-      pyqScores[key] = parseInt(sld.value);
+      // Initialize score history array if not present
+      if (!pyqScores[key]) pyqScores[key] = [];
+      pyqScores[key].push({
+        score: score,
+        timestamp: new Date().toISOString()
+      });
+      
       saveState();
       updateDashboardStats();
       updateAccordionHeader(subId);
+      
+      const subject = SUBJECTS.find(s => s.id === subId);
+      showToast('ACCURACY LOGGED', `"${subject.topics[idx]}" accuracy set to ${score}%`, 'lime');
     });
   });
 }
 
 function updateAccordionHeader(subId) {
-  const subject = subjectsData.find(s => s.id === subId);
+  const subject = SUBJECTS.find(s => s.id === subId);
   const totalTopics = subject.topics.length;
   let completedCount = 0;
   let totalAccuracySum = 0;
@@ -393,8 +394,10 @@ function updateAccordionHeader(subId) {
   subject.topics.forEach((topic, index) => {
     const key = `${subId}:${index}`;
     if (userProgress[key]) completedCount++;
-    if (pyqScores[key] !== undefined) {
-      totalAccuracySum += pyqScores[key];
+    
+    const history = pyqScores[key];
+    if (history && history.length > 0) {
+      totalAccuracySum += history[history.length - 1].score;
       scoredTopicsCount++;
     }
   });
@@ -412,12 +415,12 @@ function updateAccordionHeader(subId) {
   }
 }
 
-// SYLLABUS LIST POPULATION IN QUICK LOG
+// QUICK LOG FIELD dropdown
 const logSubjectSelect = document.getElementById('log-subject');
 
 function populateQuickLogDropdown() {
   logSubjectSelect.innerHTML = '';
-  subjectsData.forEach(sub => {
+  SUBJECTS.forEach(sub => {
     const opt = document.createElement('option');
     opt.value = sub.id;
     opt.textContent = sub.name;
@@ -425,39 +428,50 @@ function populateQuickLogDropdown() {
   });
 }
 
-// LOG STUDY SESSION BUTTON
+// QUICK WORK LOG BUTTON SUBMIT
 const saveLogBtn = document.getElementById('save-log-btn');
 const logHoursInput = document.getElementById('log-hours');
+const logAccuracyInput = document.getElementById('log-accuracy');
 
 saveLogBtn.addEventListener('click', () => {
   const subId = logSubjectSelect.value;
   const hours = parseFloat(logHoursInput.value);
+  const accuracy = parseInt(logAccuracyInput.value);
   
   if (isNaN(hours) || hours <= 0) {
     showToast('INVALID LOG', 'Study hours must be greater than zero.', 'pink');
     return;
   }
+  if (isNaN(accuracy) || accuracy < 0 || accuracy > 100) {
+    showToast('INVALID LOG', 'Accuracy score must be between 0 and 100.', 'pink');
+    return;
+  }
   
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0];
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   
   // Save log
   studyLogs.push({
-    date: today,
+    date: dateStr,
+    time: timeStr,
     subjectId: subId,
-    hours: hours
+    hours: hours,
+    accuracy: accuracy
   });
   
-  // Calculate and update study streak
-  updateStreak(today);
+  // Calculate study streak
+  updateStreak(dateStr);
   
   saveState();
   updateDashboardStats();
   
-  const subjectName = subjectsData.find(s => s.id === subId).name;
-  showToast('SESSION LOGGED', `Logged ${hours} hrs of ${subjectName} for today!`, 'lime');
+  const subjectName = SUBJECTS.find(s => s.id === subId).name;
+  showToast('SESSION LOGGED', `Logged ${hours} hrs of ${subjectName} with ${accuracy}% accuracy.`, 'lime');
   
-  // Reset input field
+  // Reset logs
   logHoursInput.value = '1.0';
+  logAccuracyInput.value = '70';
 });
 
 // STREAK MANAGEMENT
@@ -467,47 +481,38 @@ function updateStreak(todayDateStr) {
   } else {
     const lastDate = new Date(studyStreak.lastStudyDate);
     const currentDate = new Date(todayDateStr);
-    
-    // Difference in days
     const diffTime = Math.abs(currentDate - lastDate);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays === 1) {
       studyStreak.count += 1;
     } else if (diffDays > 1) {
-      studyStreak.count = 1; // Streak broken, restart
+      studyStreak.count = 1;
     }
-    // If diffDays is 0 (logged multiple times in one day), streak count stays same
   }
-  
   studyStreak.lastStudyDate = todayDateStr;
 }
 
-// REFRESH STREAK STATS ON APP LOAD (e.g. check if streak is broken)
 function verifyStreakIntegrity() {
   if (!studyStreak.lastStudyDate) return;
-  
   const today = new Date().toISOString().split('T')[0];
   const lastDate = new Date(studyStreak.lastStudyDate);
   const currentDate = new Date(today);
-  
   const diffTime = Math.abs(currentDate - lastDate);
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
   if (diffDays > 1) {
-    // More than 1 day has passed without studying. Streak is broken.
     studyStreak.count = 0;
     saveState();
   }
 }
 
-// DASHBOARD NUMERICAL STATS SYNCING & VETERAN FOCUS CALCULATOR
+// UPDATE NUMERICAL STATS
 function updateDashboardStats() {
-  // 1. Calculate overall syllabus completion
   let totalTopicsCount = 0;
   let completedTopicsCount = 0;
   
-  subjectsData.forEach(sub => {
+  SUBJECTS.forEach(sub => {
     totalTopicsCount += sub.topics.length;
     sub.topics.forEach((topic, idx) => {
       if (userProgress[`${sub.id}:${idx}`]) completedTopicsCount++;
@@ -518,178 +523,331 @@ function updateDashboardStats() {
   document.getElementById('progress-value').textContent = `${completionPercentage}%`;
   document.getElementById('progress-desc').textContent = `${completedTopicsCount} of ${totalTopicsCount} topics checked off.`;
   
-  // 2. Study Streak value
   document.getElementById('streak-value').textContent = `${studyStreak.count} DAYS`;
   if (studyStreak.count > 0) {
-    document.getElementById('streak-desc').textContent = `Keep going! Last session logged on ${studyStreak.lastStudyDate}.`;
+    document.getElementById('streak-desc').textContent = `Consistent studying! Last session: ${studyStreak.lastStudyDate}.`;
   } else {
-    document.getElementById('streak-desc').textContent = `Log your study session below to start a study streak.`;
+    document.getElementById('streak-desc').textContent = `Log your study session below to start a streak.`;
   }
   
-  // 3. Average PYQ Accuracy
-  let totalScoreSum = 0;
-  let scoresCount = 0;
+  // Calculate average accuracy
+  let totalAccuracySum = 0;
+  let accuracyLogsCount = 0;
   
-  for (let key in pyqScores) {
-    totalScoreSum += pyqScores[key];
-    scoresCount++;
-  }
+  // Check from studyLogs first (since they are quick logs)
+  studyLogs.forEach(log => {
+    if (log.accuracy !== undefined) {
+      totalAccuracySum += log.accuracy;
+      accuracyLogsCount++;
+    }
+  });
   
-  const avgAccuracy = scoresCount > 0 ? Math.round(totalScoreSum / scoresCount) : 0;
+  const avgAccuracy = accuracyLogsCount > 0 ? Math.round(totalAccuracySum / accuracyLogsCount) : 0;
   document.getElementById('accuracy-value').textContent = `${avgAccuracy}%`;
   
   let accuracyDesc = '';
-  if (scoresCount === 0) {
-    accuracyDesc = 'No practice marks logged yet.';
-  } else if (avgAccuracy < 50) {
-    accuracyDesc = `Weak accuracy! Log more correct PYQs.`;
+  if (accuracyLogsCount === 0) {
+    accuracyDesc = 'No study session marks logged yet.';
+  } else if (avgAccuracy < 60) {
+    accuracyDesc = 'Accuracy below 60%. Core reviews recommended.';
     document.getElementById('accuracy-value').className = 'card-value text-glow-pink';
-  } else if (avgAccuracy < 75) {
-    accuracyDesc = `Moderate accuracy. Target 75%+ score.`;
+  } else if (avgAccuracy < 80) {
+    accuracyDesc = 'Decent accuracy. Focus on eliminating simple arithmetic errors.';
     document.getElementById('accuracy-value').className = 'card-value text-glow-cyan';
   } else {
-    accuracyDesc = `Excellent accuracy! Maintain this rank pace.`;
+    accuracyDesc = 'Top-tier accuracy! Maintain this pace to secure high ranks.';
     document.getElementById('accuracy-value').className = 'card-value text-glow-lime';
   }
   document.getElementById('accuracy-desc').textContent = accuracyDesc;
-
-  // 4. Heuristic: AI Recommended Focus Subject & Topic
-  calculateRecommendedFocus();
 }
 
-function calculateRecommendedFocus() {
-  let highestPriorityIndex = -1;
-  let recommendedTopicStr = 'NOT AVAILABLE';
-  let recommendedSubjectName = '';
-  let reasonStr = 'Start by logging your topics!';
+// AEGIS-ADAPTIVE ADVISOR ENGINE (One-wayVisual Guidance)
+const prioritiesContainer = document.getElementById('advisor-priorities');
+const diagnosticsContainer = document.getElementById('advisor-diagnostics');
+const warningsContainer = document.getElementById('advisor-warnings');
+
+function runAdaptiveAdvisor() {
+  if (!prioritiesContainer) return;
   
-  subjectsData.forEach(sub => {
-    // Subject properties
+  // 1. Calculate Priority Focus Targets based on FPI
+  const fpiList = [];
+  
+  SUBJECTS.forEach(sub => {
     const weight = sub.weightage;
-    
-    // Subject completions & accuracy
-    let subCompleted = 0;
-    let subAccuracySum = 0;
+    let completed = 0;
+    let accuracySum = 0;
     let scoredTopics = 0;
     
     sub.topics.forEach((topic, idx) => {
       const key = `${sub.id}:${idx}`;
-      if (userProgress[key]) subCompleted++;
-      if (pyqScores[key] !== undefined) {
-        subAccuracySum += pyqScores[key];
+      if (userProgress[key]) completed++;
+      
+      const history = pyqScores[key];
+      if (history && history.length > 0) {
+        accuracySum += history[history.length - 1].score;
         scoredTopics++;
       }
     });
     
-    const subCompletionRatio = subCompleted / sub.topics.length;
-    const subAvgAccuracy = scoredTopics > 0 ? (subAccuracySum / scoredTopics) : 60; // assume 60% default if unstudied
+    const compRatio = completed / sub.topics.length;
+    const avgAcc = scoredTopics > 0 ? (accuracySum / scoredTopics) : 60; // 60% fallback
     
-    // Calculate neglected days
-    const lastSessionLog = studyLogs.slice().reverse().find(l => l.subjectId === sub.id);
-    let daysNeglected = 15; // default high neglect
-    if (lastSessionLog) {
-      const lastDate = new Date(lastSessionLog.date);
-      const today = new Date();
-      const diff = Math.ceil(Math.abs(today - lastDate) / (1000 * 60 * 60 * 24));
+    // Neglect duration
+    const lastLog = studyLogs.slice().reverse().find(l => l.subjectId === sub.id);
+    let daysNeglected = 15;
+    if (lastLog) {
+      const diff = Math.ceil(Math.abs(new Date() - new Date(lastLog.date)) / (1000 * 60 * 60 * 24));
       daysNeglected = Math.min(diff, 30);
     }
     
-    // Focus Priority Index (FPI) Formula
-    // Higher weight, lower completion, lower accuracy, and higher neglect raise FPI
-    const fpi = weight * (1.5 - subCompletionRatio) * (1.1 - (subAvgAccuracy / 100)) * (1 + (daysNeglected / 15));
+    const fpi = weight * (1.5 - compRatio) * (1.1 - (avgAcc / 100)) * (1 + (daysNeglected / 15));
     
-    if (fpi > highestPriorityIndex) {
-      // Find first incomplete topic in this subject
-      let targetTopicIdx = -1;
-      for (let i = 0; i < sub.topics.length; i++) {
-        if (!userProgress[`${sub.id}:${i}`]) {
-          targetTopicIdx = i;
-          break;
+    // Find next target topic (first incomplete)
+    let targetTopic = '';
+    let targetIdx = -1;
+    for (let i = 0; i < sub.topics.length; i++) {
+      if (!userProgress[`${sub.id}:${i}`]) {
+        targetTopic = sub.topics[i];
+        targetIdx = i;
+        break;
+      }
+    }
+    
+    if (targetIdx === -1) { // all complete, find lowest accuracy
+      let minAcc = 101;
+      sub.topics.forEach((_, i) => {
+        const history = pyqScores[`${sub.id}:${i}`];
+        if (history && history.length > 0 && history[history.length - 1].score < minAcc) {
+          minAcc = history[history.length - 1].score;
+          targetTopic = sub.topics[i];
+          targetIdx = i;
         }
-      }
+      });
+    }
+    
+    fpiList.push({
+      subjectId: sub.id,
+      subjectName: sub.name,
+      fpi: fpi,
+      topicName: targetTopic || 'All Finished',
+      topicIdx: targetIdx,
+      weight: weight,
+      color: sub.color
+    });
+  });
+  
+  // Sort descending by FPI score
+  fpiList.sort((a, b) => b.fpi - a.fpi);
+  
+  // Render priorities list
+  prioritiesContainer.innerHTML = '';
+  fpiList.slice(0, 3).forEach((item, index) => {
+    const card = document.createElement('div');
+    card.className = 'priority-item';
+    card.innerHTML = `
+      <div class="priority-num" style="color: ${item.color}">${index + 1}</div>
+      <div class="priority-content">
+        <span class="priority-subject" style="color: ${item.color}">${item.subjectName}</span>
+        <div class="priority-topic">${item.topicName}</div>
+        <div class="priority-reason">Weight: ${item.weight} Marks. Suggested due to high syllabus importance and neglect factor.</div>
+      </div>
+    `;
+    prioritiesContainer.appendChild(card);
+  });
+  
+  // 2. Compute Cognitive Behavior Profile
+  // A. Peak Study Hour block
+  let peakTimeStr = 'NO LOGS';
+  const blockAccuracies = { 'Morning': { sum: 0, count: 0 }, 'Afternoon': { sum: 0, count: 0 }, 'Evening': { sum: 0, count: 0 }, 'Late Night': { sum: 0, count: 0 } };
+  
+  studyLogs.forEach(log => {
+    if (log.time && log.accuracy !== undefined) {
+      const hour = parseInt(log.time.split(':')[0]);
+      let block = 'Morning';
+      if (hour >= 12 && hour < 17) block = 'Afternoon';
+      else if (hour >= 17 && hour < 22) block = 'Evening';
+      else if (hour >= 22 || hour < 5) block = 'Late Night';
       
-      // If all completed, find topic with lowest accuracy
-      if (targetTopicIdx === -1) {
-        let lowestAcc = 101;
-        sub.topics.forEach((_, i) => {
-          const acc = pyqScores[`${sub.id}:${i}`];
-          if (acc !== undefined && acc < lowestAcc) {
-            lowestAcc = acc;
-            targetTopicIdx = i;
-          }
-        });
+      blockAccuracies[block].sum += log.accuracy;
+      blockAccuracies[block].count++;
+    }
+  });
+  
+  let maxAvg = 0;
+  let bestBlock = '';
+  for (let key in blockAccuracies) {
+    if (blockAccuracies[key].count > 0) {
+      const avg = blockAccuracies[key].sum / blockAccuracies[key].count;
+      if (avg > maxAvg) {
+        maxAvg = avg;
+        bestBlock = key;
       }
-      
-      if (targetTopicIdx !== -1) {
-        highestPriorityIndex = fpi;
-        recommendedSubjectName = sub.name;
-        recommendedTopicStr = sub.topics[targetTopicIdx];
-        
-        if (!userProgress[`${sub.id}:${targetTopicIdx}`]) {
-          reasonStr = `High weight subject (${weight}M). Incomplete crucial syllabus.`;
-        } else {
-          reasonStr = `Accuracy on this topic is low (${pyqScores[`${sub.id}:${targetTopicIdx}`]}%). Needs practice.`;
+    }
+  }
+  
+  if (bestBlock) {
+    peakTimeStr = `${bestBlock} (${Math.round(maxAvg)}% Acc)`;
+  }
+  
+  // B. Comfort Zone Tracker
+  let comfortStatus = 'Balanced Focus';
+  let comfortDesc = 'Even focus across syllabus.';
+  let biasDetected = false;
+  
+  // Check if user is studying mastered subjects and neglecting unstudied ones
+  let masteredStudiedRecently = false;
+  let neglectedIgnored = false;
+  let avoidedSubjectName = '';
+  
+  SUBJECTS.forEach(sub => {
+    let completed = 0;
+    sub.topics.forEach((_, i) => {
+      if (userProgress[`${sub.id}:${i}`]) completed++;
+    });
+    const completion = completed / sub.topics.length;
+    
+    // Check logs in past 7 days
+    const hasBeenStudiedRecently = studyLogs.some(log => {
+      if (log.subjectId !== sub.id) return false;
+      const logDate = new Date(log.date);
+      const diffDays = (new Date() - logDate) / (1000 * 60 * 60 * 24);
+      return diffDays <= 7;
+    });
+    
+    if (completion > 0.8 && hasBeenStudiedRecently) {
+      masteredStudiedRecently = true;
+    }
+    
+    if (completion < 0.3 && !hasBeenStudiedRecently) {
+      neglectedIgnored = true;
+      avoidedSubjectName = sub.name;
+    }
+  });
+  
+  if (masteredStudiedRecently && neglectedIgnored) {
+    biasDetected = true;
+    comfortStatus = 'Comfort Bias';
+    comfortDesc = `Focusing on mastered zones, avoiding ${avoidedSubjectName}.`;
+  }
+  
+  diagnosticsContainer.innerHTML = `
+    <div class="diagnostic-card">
+      <span class="diagnostic-lbl">Peak Performance Hour</span>
+      <div class="diagnostic-val" style="color: var(--neon-lime)">${peakTimeStr}</div>
+      <p class="card-desc">Time block yielding your highest practice accuracy scores.</p>
+    </div>
+    <div class="diagnostic-card">
+      <span class="diagnostic-lbl">Comfort Zone Status</span>
+      <div class="diagnostic-val" style="color: ${biasDetected ? 'var(--neon-pink)' : 'var(--neon-cyan)'}">${comfortStatus}</div>
+      <p class="card-desc">${comfortDesc}</p>
+    </div>
+  `;
+  
+  // 3. Compute Critical Warnings (Neglect & Accuracy drops)
+  const warningsList = [];
+  
+  // A. Check for Subject Neglect (Memory Decay)
+  SUBJECTS.forEach(sub => {
+    let completed = 0;
+    sub.topics.forEach((_, i) => {
+      if (userProgress[`${sub.id}:${i}`]) completed++;
+    });
+    
+    if (completed > 0) {
+      const logs = studyLogs.filter(l => l.subjectId === sub.id);
+      if (logs.length > 0) {
+        const lastDate = new Date(logs[logs.length - 1].date);
+        const diffDays = Math.ceil(Math.abs(new Date() - lastDate) / (1000 * 60 * 60 * 24));
+        if (diffDays > 10) {
+          warningsList.push(`Potential memory decay in <span class="highlight-pink">${sub.name}</span>. Unstudied for ${diffDays} days.`);
         }
       }
     }
   });
   
-  if (recommendedSubjectName) {
-    document.getElementById('focus-value').innerHTML = `<span style="font-size: 0.75rem; letter-spacing: 0.1em; display:block; opacity:0.5;">${recommendedSubjectName.toUpperCase()}</span> ${recommendedTopicStr}`;
-    document.getElementById('focus-desc').textContent = reasonStr;
+  // B. Check for topic score regression (Last test score lower than previous by 15%)
+  for (let key in pyqScores) {
+    const history = pyqScores[key];
+    if (history && history.length >= 2) {
+      const prev = history[history.length - 2].score;
+      const curr = history[history.length - 1].score;
+      if (prev - curr > 15) {
+        const subId = key.split(':')[0];
+        const idx = parseInt(key.split(':')[1]);
+        const subject = SUBJECTS.find(s => s.id === subId);
+        warningsList.push(`Score regression in <span class="highlight-pink">${subject.name} - ${subject.topics[idx]}</span> (dropped from ${prev}% to ${curr}%).`);
+      }
+    }
+  }
+  
+  warningsContainer.innerHTML = '';
+  if (warningsList.length === 0) {
+    warningsContainer.innerHTML = `
+      <div class="warning-item" style="background: rgba(193, 255, 114, 0.03); border-color: rgba(193, 255, 114, 0.1);">
+        <span class="warning-indicator" style="background-color: var(--neon-lime); box-shadow: 0 0 8px var(--neon-lime);"></span>
+        <div class="warning-text" style="color: rgba(255,255,255,0.8)">All systems stable. Revision schedules are balanced, no score regressions found.</div>
+      </div>
+    `;
+  } else {
+    warningsList.forEach(warn => {
+      const row = document.createElement('div');
+      row.className = 'warning-item';
+      row.innerHTML = `
+        <span class="warning-indicator"></span>
+        <div class="warning-text">${warn}</div>
+      `;
+      warningsContainer.appendChild(row);
+    });
   }
 }
 
-// CANVAS DRAWING: RADAR CHART (Weakness & Subjects Weight)
+// CANVAS DRAWINGS: RADAR CHART
 function renderRadarChart() {
   const canvas = document.getElementById('radarChart');
   if (!canvas) return;
-  
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
   const center = { x: canvas.width / 2, y: canvas.height / 2 };
-  const radius = 130;
-  const numSubjects = subjectsData.length;
+  const radius = 120;
+  const numSubjects = SUBJECTS.length;
   const angleStep = (2 * Math.PI) / numSubjects;
   
-  // 1. Draw Concentric Grid Rings
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
-  ctx.lineWidth = 1;
+  // Concentric Rings
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
   for (let r = 1; r <= 5; r++) {
     const ringRadius = (radius / 5) * r;
     ctx.beginPath();
     ctx.arc(center.x, center.y, ringRadius, 0, 2 * Math.PI);
     ctx.stroke();
     
-    // Add grid scale label
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
     ctx.font = '8px Satoshi';
-    ctx.fillText(`${r * 20}%`, center.x + 3, center.y - ringRadius + 8);
+    ctx.fillText(`${r * 20}%`, center.x + 3, center.y - ringRadius + 7);
   }
   
-  // 2. Draw Spokes and Subject Labels
-  subjectsData.forEach((sub, i) => {
+  // Spokes & Labels
+  SUBJECTS.forEach((sub, i) => {
     const angle = i * angleStep - Math.PI / 2;
     const xEnd = center.x + radius * Math.cos(angle);
     const yEnd = center.y + radius * Math.sin(angle);
     
-    // Spoke line
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
     ctx.beginPath();
     ctx.moveTo(center.x, center.y);
     ctx.lineTo(xEnd, yEnd);
     ctx.stroke();
     
-    // Labels
+    // Labels positioning
     const labelDistance = radius + 22;
     const xLabel = center.x + labelDistance * Math.cos(angle);
     const yLabel = center.y + labelDistance * Math.sin(angle);
     
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.font = 'bold 7px Satoshi';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.font = 'bold 8px Satoshi';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     
-    // Format subject abbreviation
     let label = sub.name.split(' ').map(w => w[0]).join('');
     if (sub.name === 'Operating Systems') label = 'OS';
     if (sub.name === 'Computer Networks') label = 'CN';
@@ -700,16 +858,14 @@ function renderRadarChart() {
     if (sub.name === 'Engineering Mathematics') label = 'MATH';
     if (sub.name === 'Digital Logic') label = 'DL';
     
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
     ctx.fillText(label, xLabel, yLabel);
   });
   
-  // 3. Draw Weight Polygon (Pink Area, normalized against 15 marks max)
+  // Draw Weight Polygon (Pink)
   ctx.beginPath();
-  subjectsData.forEach((sub, i) => {
+  SUBJECTS.forEach((sub, i) => {
     const angle = i * angleStep - Math.PI / 2;
-    const weightRatio = sub.weightage / 15; // 15 is max weight (General Aptitude)
+    const weightRatio = sub.weightage / 15; // 15 is GA max
     const currentRadius = weightRatio * radius;
     const x = center.x + currentRadius * Math.cos(angle);
     const y = center.y + currentRadius * Math.sin(angle);
@@ -718,18 +874,16 @@ function renderRadarChart() {
     else ctx.lineTo(x, y);
   });
   ctx.closePath();
-  ctx.fillStyle = 'rgba(255, 45, 85, 0.1)';
+  ctx.fillStyle = 'rgba(255, 45, 85, 0.08)';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(255, 45, 85, 0.4)';
+  ctx.strokeStyle = 'rgba(255, 45, 85, 0.35)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
   
-  // 4. Draw Mastery Polygon (Cyan Area, completed topics percentage)
+  // Draw Mastery Polygon (Cyan)
   ctx.beginPath();
-  subjectsData.forEach((sub, i) => {
+  SUBJECTS.forEach((sub, i) => {
     const angle = i * angleStep - Math.PI / 2;
-    
-    // Calculate completion ratio
     let completed = 0;
     sub.topics.forEach((topic, idx) => {
       if (userProgress[`${sub.id}:${idx}`]) completed++;
@@ -743,22 +897,20 @@ function renderRadarChart() {
     else ctx.lineTo(x, y);
   });
   ctx.closePath();
-  ctx.fillStyle = 'rgba(0, 242, 255, 0.12)';
+  ctx.fillStyle = 'rgba(0, 242, 255, 0.1)';
   ctx.fill();
-  ctx.strokeStyle = 'rgba(0, 242, 255, 0.6)';
+  ctx.strokeStyle = 'rgba(0, 242, 255, 0.55)';
   ctx.lineWidth = 1.5;
   ctx.stroke();
 }
 
-// CANVAS DRAWING: STUDY CONSISTENCY HEATMAP
+// CANVAS DRAWINGS: STUDY CONSISTENCY HEATMAP
 function renderHeatmap() {
   const canvas = document.getElementById('heatmap');
   if (!canvas) return;
-  
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
-  // Configuration: 26 weeks, 7 days a week
   const cols = 26;
   const rows = 7;
   const boxSize = 13;
@@ -766,41 +918,31 @@ function renderHeatmap() {
   const paddingX = 35;
   const paddingY = 25;
   
-  // Build a date grid of the last 26 weeks (182 days)
-  const today = new Date();
   const dateMap = {};
-  
-  // Pre-fill date logs mapping from studyLogs state
   studyLogs.forEach(log => {
     dateMap[log.date] = (dateMap[log.date] || 0) + log.hours;
   });
   
-  // Find start date: 26 weeks ago, aligned to the Sunday of that week
   const startDate = new Date();
-  startDate.setDate(today.getDate() - (26 * 7));
-  const startDayOffset = startDate.getDay(); // 0 is Sunday
-  startDate.setDate(startDate.getDate() - startDayOffset);
+  startDate.setDate(startDate.getDate() - (26 * 7));
+  const offset = startDate.getDay();
+  startDate.setDate(startDate.getDate() - offset);
   
-  // Draw Day Labels (Mon, Wed, Fri)
+  // Mon, Wed, Fri Labels
   ctx.fillStyle = 'rgba(255,255,255,0.3)';
   ctx.font = '8px Satoshi';
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   
-  const daysToShow = { 1: 'Mon', 3: 'Wed', 5: 'Fri' };
+  const days = { 1: 'Mon', 3: 'Wed', 5: 'Fri' };
   for (let r = 0; r < rows; r++) {
-    if (daysToShow[r]) {
-      const y = paddingY + r * (boxSize + gap) + boxSize / 2;
-      ctx.fillText(daysToShow[r], paddingX - 10, y);
+    if (days[r]) {
+      ctx.fillText(days[r], paddingX - 10, paddingY + r * (boxSize + gap) + boxSize / 2);
     }
   }
   
-  // Draw Month Labels at top
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'bottom';
+  // Grid box renders
   let lastMonthStr = '';
-  
-  // Loop to draw grid boxes
   const cursorDate = new Date(startDate);
   for (let c = 0; c < cols; c++) {
     for (let r = 0; r < rows; r++) {
@@ -810,52 +952,46 @@ function renderHeatmap() {
       const x = paddingX + c * (boxSize + gap);
       const y = paddingY + r * (boxSize + gap);
       
-      // Determine box color based on study hours
-      let fillColor = 'rgba(255, 255, 255, 0.03)'; // 0 hours
-      if (hours > 0 && hours <= 1.5) fillColor = 'rgba(255, 45, 85, 0.15)'; // Light Pink glow
-      else if (hours > 1.5 && hours <= 3.5) fillColor = 'rgba(255, 45, 85, 0.4)'; // Mid Pink
-      else if (hours > 3.5 && hours <= 6) fillColor = 'rgba(255, 45, 85, 0.7)'; // Deep Pink
-      else if (hours > 6) fillColor = 'var(--neon-pink)'; // Ultra Pink
+      let fillVal = 'rgba(255,255,255,0.03)';
+      if (hours > 0 && hours <= 1.5) fillVal = 'rgba(255, 45, 85, 0.15)';
+      else if (hours > 1.5 && hours <= 3.5) fillVal = 'rgba(255, 45, 85, 0.35)';
+      else if (hours > 3.5 && hours <= 6) fillVal = 'rgba(255, 45, 85, 0.65)';
+      else if (hours > 6) fillVal = 'var(--neon-pink)';
       
-      ctx.fillStyle = fillColor;
-      
-      // Draw rounded rect (manually since older browsers might lack roundRect)
+      ctx.fillStyle = fillVal;
       drawRoundedRect(ctx, x, y, boxSize, boxSize, 2);
       
-      // Draw Month label if month changes
       if (r === 0 && c % 4 === 0) {
-        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-        const currentMonthStr = monthNames[cursorDate.getMonth()];
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const currentMonthStr = months[cursorDate.getMonth()];
         if (currentMonthStr !== lastMonthStr) {
           ctx.fillStyle = 'rgba(255,255,255,0.3)';
-          ctx.font = '8px Satoshi';
           ctx.fillText(currentMonthStr, x, paddingY - 8);
           lastMonthStr = currentMonthStr;
         }
       }
       
-      // Increment cursor date by 1 day
       cursorDate.setDate(cursorDate.getDate() + 1);
     }
   }
 }
 
-function drawRoundedRect(ctx, x, y, width, height, radius) {
+function drawRoundedRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
   ctx.closePath();
   ctx.fill();
 }
 
-// TOAST NOTIFICATIONS HELPER
+// TOAST MESSAGER
 function showToast(title, message, color = 'pink') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
@@ -867,327 +1003,223 @@ function showToast(title, message, color = 'pink') {
       <div class="toast-message">${message}</div>
     </div>
   `;
-  
   container.appendChild(toast);
-  
-  // Trigger entry animation
-  setTimeout(() => {
-    toast.classList.add('show');
-  }, 10);
-  
-  // Auto remove after 4 seconds
+  setTimeout(() => toast.classList.add('show'), 10);
   setTimeout(() => {
     toast.classList.remove('show');
-    setTimeout(() => {
-      toast.remove();
-    }, 500);
+    setTimeout(() => toast.remove(), 500);
   }, 4000);
 }
 
-// VETERAN AI HEURISTIC ADVICE ENGINE
-const consoleLogs = document.getElementById('console-logs');
-
-function addConsoleLine(sender, text, type = 'coach-line') {
-  const line = document.createElement('div');
-  line.className = `console-line ${type}`;
+// COUNTDOWN TIMER ENGINE
+let countdownInterval;
+function startCountdownClock(examDateStr) {
+  if (countdownInterval) clearInterval(countdownInterval);
   
-  let prefixText = `[${sender}]:`;
-  let formattedText = text;
+  const examTime = new Date(examDateStr).getTime();
   
-  // Format highlighters
-  formattedText = formattedText.replace(/(\/[a-zA-Z_]+)/g, '<span class="highlight-pink">$1</span>');
-  formattedText = formattedText.replace(/(\d+%\s*accuracy)/gi, '<span class="highlight-lime">$1</span>');
-  formattedText = formattedText.replace(/(\d+%\s*completion)/gi, '<span class="highlight-cyan">$1</span>');
-  formattedText = formattedText.replace(/(high priority|warning|attention|critical)/gi, '<span class="highlight-pink">$1</span>');
+  const dSpan = document.getElementById('cd-days');
+  const hSpan = document.getElementById('cd-hours');
+  const mSpan = document.getElementById('cd-mins');
+  const sSpan = document.getElementById('cd-secs');
   
-  line.innerHTML = `<span class="prefix">${prefixText}</span> ${formattedText}`;
-  consoleLogs.appendChild(line);
-  
-  // Scroll console to bottom
-  consoleLogs.scrollTop = consoleLogs.scrollHeight;
-}
-
-// CLEAR CONSOLE LOGS
-const clearConsoleBtn = document.getElementById('clear-console-btn');
-clearConsoleBtn.addEventListener('click', () => {
-  consoleLogs.innerHTML = `
-    <div class="console-line system-line">
-      <span class="prefix">[SYSTEM]:</span> Log console cleared. Ready for command prompts.
-    </div>
-  `;
-});
-
-// ZAP / COMMAND PROCESSOR
-const commandInput = document.getElementById('command-input');
-const commandZapBtn = document.getElementById('command-zap-btn');
-
-commandInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    processCommand(commandInput.value.trim());
-    commandInput.value = '';
-  }
-});
-
-commandZapBtn.addEventListener('click', () => {
-  processCommand(commandInput.value.trim());
-  commandInput.value = '';
-});
-
-// COMMANDS PROCESSOR
-function processCommand(rawQuery) {
-  if (!rawQuery) {
-    // Generate default advice if query is empty
-    triggerDefaultCoachAdvice();
-    return;
-  }
-  
-  // Render user input in console
-  addConsoleLine('USER', rawQuery, 'user-line');
-  
-  const query = rawQuery.toLowerCase();
-  
-  // Latency micro-animation
-  const latencyBadge = document.getElementById('status-latency');
-  const simLatency = (Math.random() * 2 + 0.5).toFixed(1);
-  latencyBadge.textContent = `${simLatency}ms`;
-  
-  // Check special commands
-  if (query === '/help') {
-    addConsoleLine('VETERAN_COACH', `Available Commands:\n - <span class="highlight-pink">/focus</span> : List topics requiring immediate study.\n - <span class="highlight-pink">/streak</span> : View streak status and motivational check.\n - <span class="highlight-pink">/weakness</span> : View topics with accuracy less than 65%.\n - <span class="highlight-pink">/subjects</span> : Brief summary of subjects weightage.\n - <span class="highlight-pink">/advice</span> : General veteran GATE exam preparation guidelines.\n - Or simply ask questions about specific subjects (e.g. "TOC", "COA", "Operating Systems").`);
-    return;
-  }
-  
-  if (query === '/focus') {
-    triggerFocusAnalysis();
-    return;
-  }
-  
-  if (query === '/streak') {
-    const days = studyStreak.count;
-    if (days === 0) {
-      addConsoleLine('VETERAN_COACH', `Your study streak is currently 0 days. The secret to GATE is consistency. Spend even 1 hour today logging a topic, and light up that streak indicator!`);
-    } else {
-      addConsoleLine('VETERAN_COACH', `Outstanding! You are on a ${days}-day study streak. Veteran advice: Don't miss a single day. A 15-minute revision log is better than a blank day to keep the memory pathways active.`);
-    }
-    return;
-  }
-  
-  if (query === '/weakness') {
-    triggerWeaknessAnalysis();
-    return;
-  }
-  
-  if (query === '/subjects') {
-    let output = "GATE CSE Subject Weightage Overview:\n";
-    subjectsData.forEach(s => {
-      output += ` - ${s.name}: ${s.weightage} marks average.\n`;
-    });
-    addConsoleLine('VETERAN_COACH', output);
-    return;
-  }
-  
-  if (query === '/advice') {
-    const adviceTexts = [
-      "In GATE, accuracy beats quantity. Attempting 55 questions with 90% accuracy yields an excellent rank. Stop guessing.",
-      "Discrete Mathematics, Algorithms, and TOC are the backbones. Master them first. They yield ~25 marks combined and are highly logic-driven.",
-      "Always solve PYQs twice. First when finishing the chapter; second during December revision. Mark the ones you got wrong.",
-      "Mock tests are not to check your marks; they are to analyze your time traps. Did you spend 5 minutes on an MSQ only to get it wrong? That's a target failure."
-    ];
-    const randAdvice = adviceTexts[Math.floor(Math.random() * adviceTexts.length)];
-    addConsoleLine('VETERAN_COACH', `[VETERAN TIP] ${randAdvice}`);
-    return;
-  }
-  
-  // Subject Search fallback
-  let foundSubject = null;
-  subjectsData.forEach(sub => {
-    if (query.includes(sub.id.toLowerCase()) || query.includes(sub.name.toLowerCase()) || (sub.id === 'Database_Management_Systems' && query.includes('dbms')) || (sub.id === 'Computer_Organization_Architecture' && query.includes('coa')) || (sub.id === 'Theory_of_Computation' && query.includes('toc')) || (sub.id === 'Computer_Networks' && query.includes('cn')) || (sub.id === 'Digital_Logic' && query.includes('dl')) || (sub.id === 'Compiler_Design' && query.includes('cd')) || (sub.id === 'Operating_Systems' && query.includes('os'))) {
-      foundSubject = sub;
-    }
-  });
-  
-  if (foundSubject) {
-    provideSubjectAdvice(foundSubject);
-    return;
-  }
-  
-  // General text query response
-  generateGeneralAdvice(rawQuery);
-}
-
-// TOPICS PRIORITY CALCULATOR
-function triggerFocusAnalysis() {
-  const fpiList = [];
-  
-  subjectsData.forEach(sub => {
-    const weight = sub.weightage;
-    
-    // Subject completions & accuracy
-    let completed = 0;
-    let accuracySum = 0;
-    let scoredTopics = 0;
-    
-    sub.topics.forEach((topic, idx) => {
-      const key = `${sub.id}:${idx}`;
-      if (userProgress[key]) completed++;
-      if (pyqScores[key] !== undefined) {
-        accuracySum += pyqScores[key];
-        scoredTopics++;
-      }
-    });
-    
-    const compRatio = completed / sub.topics.length;
-    const avgAcc = scoredTopics > 0 ? (accuracySum / scoredTopics) : 60;
-    
-    // Calculate neglected days
-    const lastSessionLog = studyLogs.slice().reverse().find(l => l.subjectId === sub.id);
-    let daysNeglected = 15; 
-    if (lastSessionLog) {
-      const lastDate = new Date(lastSessionLog.date);
-      const today = new Date();
-      const diff = Math.ceil(Math.abs(today - lastDate) / (1000 * 60 * 60 * 24));
-      daysNeglected = Math.min(diff, 30);
+  function updateClock() {
+    const diff = examTime - new Date().getTime();
+    if (diff <= 0) {
+      clearInterval(countdownInterval);
+      dSpan.textContent = '00';
+      hSpan.textContent = '00';
+      mSpan.textContent = '00';
+      sSpan.textContent = '00';
+      return;
     }
     
-    const fpi = weight * (1.5 - compRatio) * (1.1 - (avgAcc / 100)) * (1 + (daysNeglected / 15));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const secs = Math.floor((diff % (1000 * 60)) / 1000);
     
-    // Get first incomplete topic
-    let nextTopic = 'All completed';
-    for (let i = 0; i < sub.topics.length; i++) {
-      if (!userProgress[`${sub.id}:${i}`]) {
-        nextTopic = sub.topics[i];
-        break;
-      }
-    }
-    
-    fpiList.push({
-      subjectName: sub.name,
-      subjectId: sub.id,
-      fpi: fpi,
-      nextTopic: nextTopic,
-      weight: weight
-    });
-  });
-  
-  // Sort by priority index descending
-  fpiList.sort((a, b) => b.fpi - a.fpi);
-  
-  let output = "VETERAN PRIORITY MATRIX (Focus on these first):\n\n";
-  fpiList.slice(0, 3).forEach((item, index) => {
-    output += `${index + 1}. <span class="highlight-pink">${item.subjectName}</span> (Weight: ${item.weight} Marks)\n`;
-    output += `   ➜ Recommended Topic: "${item.nextTopic}"\n`;
-    output += `   ➜ Focus reason: Subject weightage is high relative to your logged completion level.\n\n`;
-  });
-  
-  addConsoleLine('VETERAN_COACH', output);
-}
-
-// WEAKNESS PERFORMANCE DETECTOR
-function triggerWeaknessAnalysis() {
-  const weaknesses = [];
-  
-  subjectsData.forEach(sub => {
-    sub.topics.forEach((topic, idx) => {
-      const key = `${sub.id}:${idx}`;
-      const acc = pyqScores[key];
-      if (acc !== undefined && acc < 70) {
-        weaknesses.push({
-          subjectName: sub.name,
-          topicName: topic,
-          accuracy: acc,
-          weight: sub.weightage
-        });
-      }
-    });
-  });
-  
-  if (weaknesses.length === 0) {
-    addConsoleLine('VETERAN_COACH', `No major weaknesses detected! All your logged topics have PYQ accuracies above 70%. Superb progress. Continue practicing newer subjects.`);
-    return;
+    dSpan.textContent = String(days).padStart(2, '0');
+    hSpan.textContent = String(hours).padStart(2, '0');
+    mSpan.textContent = String(mins).padStart(2, '0');
+    sSpan.textContent = String(secs).padStart(2, '0');
   }
   
-  // Sort by lowest accuracy and highest subject weightage
-  weaknesses.sort((a, b) => {
-    if (a.accuracy !== b.accuracy) return a.accuracy - b.accuracy;
-    return b.weight - a.weight;
-  });
-  
-  let output = "WEAKNESS RADAR REPORT:\nThe following topics represent potential marks loss in GATE. Practice PYQs again:\n\n";
-  weaknesses.slice(0, 4).forEach(w => {
-    output += ` ➜ [${w.subjectName}] "${w.topicName}"\n`;
-    output += `    Score: <span class="highlight-pink">${w.accuracy}% accuracy</span>. Target: 75%+. (Subject weight: ${w.weight} Marks)\n`;
-  });
-  
-  addConsoleLine('VETERAN_COACH', output);
+  updateClock();
+  countdownInterval = setInterval(updateClock, 1000);
 }
 
-// SUBJECT-SPECIFIC ADVICE
-function provideSubjectAdvice(subject) {
-  const adviceMap = {
-    "Discrete_Mathematics": "Discrete Math has high scoring weight (~8 Marks). Questions on Graph Theory (chromatic numbers, planarity) and Recurrence Relations are asked almost every year. Ensure your propositional logic proofs are rock solid.",
-    "Engineering_Mathematics": "Engineering Math (~5 Marks): Focus heavily on Linear Algebra (finding eigenvalues, rank of matrices, systems of equations) and Bayes Theorem in probability. These are guaranteed easy marks if practiced properly.",
-    "Digital_Logic": "Digital Logic (~5 Marks): Combinational circuit questions (especially implementing functions using Muxes) and Sequential counters (state equations, finding mod of counter) are guaranteed templates. Solve 10-15 standard Counter design problems.",
-    "Computer_Organization_Architecture": "COA (~7 Marks): Pipelining hazards (data dependencies, stalls) and Cache mapping (calculating tag bits, hit latency) dominate COA. Draw cache blocks on paper; visual representation prevents calculation errors.",
-    "Data_Structures": "Data Structures (~7 Marks): C pointers, recursion tracking, and binary tree traversals (inorder/preorder reconstruction) are highly frequent. Practice dry-running recursive functions with recursion trees.",
-    "Algorithms": "Algorithms (~7 Marks): Master asymptotic notations first. Graph algorithms (Dijkstra, Kruskal, Prim) are highly repetitive. Dynamic programming is rarely asked in complex forms; standard templates are enough.",
-    "Theory_of_Computation": "TOC (~9 Marks): Highly logical, full marks possible. Master finding the closure properties of language families. Decidability vs Undecidability is a common trap topic. Memorize the standard Turing decidable table.",
-    "Compiler_Design": "Compiler Design (~4 Marks): Parser construction (LL(1) parse tables, LR item states) are standard 2-mark questions. Practice computing First and Follow sets correctly; a simple error here ruins the parsing tree.",
-    "Operating_Systems": "Operating Systems (~9 Marks): Concurrency (classical semaphore synchronization - producer/consumer, reader/writer) and Virtual Memory (paging calculations, TLB hit rates) are critical. Be thorough with page table size arithmetic.",
-    "Database_Management_Systems": "DBMS (~7 Marks): B/B+ tree calculations (finding max keys/order) and Transaction Serializability (testing conflict/view serializability, 2-phase locking protocols) are highly high-yield. SQL queries are scoring if edge-cases (NULL values) are handled.",
-    "Computer_Networks": "Computer Networks (~9 Marks): CIDR subnetting (calculating range/subnets) and TCP Congestion Control window modifications are tested every single year. These are purely mathematical; solve 20+ numericals.",
-    "General_Aptitude": "General Aptitude (15 Marks!): The single highest weight section. Do not ignore it. Devote 30 minutes daily to analytical and quantitative questions. A score of 12+/15 is essential for a top-500 rank."
-  };
-  
-  const advice = adviceMap[subject.id] || "Practice daily PYQs, verify calculations, and analyze step errors.";
-  addConsoleLine('VETERAN_COACH', `Subject focus: <span class="highlight-cyan">${subject.name}</span> (~${subject.weightage} Marks)\n\n[VETERAN TIPS]:\n${advice}`);
-}
+// ONLINE BULLETIN SYNC CMS
+const bulletinFeedContainer = document.getElementById('bulletin-feed-container');
 
-// GENERAL QUOTE GENERATION
-function generateGeneralAdvice(query) {
-  const genericAdvices = [
-    "GATE is a test of elimination as much as selection. Focus on reducing negative marks. Don't mark options unless 95% confident.",
-    "If you are stuck on a difficult topic, move to another subject. Coming back with a fresh perspective is a proven cognitive recovery strategy.",
-    "Are you logging test series questions? A mistakes notebook containing all mock errors is the single most valuable asset in the final 3 months.",
-    "Study networks or COA when your cognitive levels are high (morning). Keep Aptitude or C coding practice for lower energy hours (afternoon)."
-  ];
-  
-  const rand = genericAdvices[Math.floor(Math.random() * genericAdvices.length)];
-  addConsoleLine('VETERAN_COACH', `I processed your inquiry. Here is some general veteran advice:\n\n"${rand}"\n\nType <span class="highlight-pink">/help</span> for specific database analytics commands.`);
-}
-
-function triggerDefaultCoachAdvice() {
-  addConsoleLine('VETERAN_COACH', "Keep consistency up. Enter <span class='highlight-pink'>/focus</span> to see where you should dedicate study hours today.");
-}
-
-// ONLINE AUTO-UPDATE HANDLER
-function syncTrendsOnline() {
-  fetch('gate_trends.json')
-    .then(response => {
-      if (!response.ok) throw new Error('Failed to load online trends file');
-      return response.json();
+function syncBulletinOnline() {
+  fetch('gate_news.json')
+    .then(res => {
+      if (!res.ok) throw new Error('Bulletin Offline');
+      return res.json();
     })
     .then(data => {
-      if (data && data.version) {
-        console.log('Online Weightage Trends fetched successfully. Version:', data.version);
-        // Save to state
-        subjectsData = data.subjects;
-        localStorage.setItem('gateQuest_subjectsData', JSON.stringify(subjectsData));
-        
-        // Re-draw elements
-        generateSyllabusAccordion();
-        populateQuickLogDropdown();
-        updateDashboardStats();
-        
-        // Show silent toast
-        showToast('TRENDS CONVERGED', `Synchronized GATE CSE trends version ${data.version} successfully.`, 'cyan');
+      if (data && data.announcements) {
+        localStorage.setItem('gateQuest_v2_bulletin', JSON.stringify(data));
+        renderBulletinFeed(data);
       }
     })
-    .catch(err => {
-      console.log('Running offline. Using cached subject parameters.', err);
+    .catch(() => {
+      // Offline fallback
+      const cached = localStorage.getItem('gateQuest_v2_bulletin');
+      if (cached) {
+        renderBulletinFeed(JSON.parse(cached));
+      } else {
+        bulletinFeedContainer.innerHTML = '<div class="bulletin-desc" style="text-align:center;">Bulletin feed empty. Connect online to load.</div>';
+      }
     });
 }
 
-// APP ENTRY POINT
+function renderBulletinFeed(data) {
+  bulletinFeedContainer.innerHTML = '';
+  
+  // Set Exam countdown target
+  if (data.examDate) {
+    startCountdownClock(data.examDate);
+  }
+  
+  data.announcements.forEach(ann => {
+    const item = document.createElement('div');
+    item.className = 'bulletin-item';
+    
+    const linkTag = ann.link ? `<a href="${ann.link}" target="_blank" class="bulletin-title" style="text-decoration:none; color:#ffffff; hover:text-decoration:underline;">${ann.title} ➜</a>` : `<span class="bulletin-title">${ann.title}</span>`;
+    
+    item.innerHTML = `
+      <div class="bulletin-meta">
+        <span class="bulletin-date">${ann.date}</span>
+        <span class="bulletin-severity sev-${ann.severity}">${ann.severity}</span>
+      </div>
+      ${linkTag}
+      <p class="bulletin-desc">${ann.description}</p>
+    `;
+    bulletinFeedContainer.appendChild(item);
+  });
+}
+
+// ONBOARDING TOUR SETUP
+let currentTourStep = 0;
+const onboardingOverlay = document.getElementById('onboarding-overlay');
+const nextBtn = document.getElementById('tour-next-btn');
+const skipBtn = document.getElementById('tour-skip-btn');
+const stepCounter = document.getElementById('tour-step-counter');
+const stepHeading = document.getElementById('tour-step-heading');
+const stepDesc = document.getElementById('tour-step-desc');
+
+const tourSteps = [
+  {
+    heading: "Welcome to GATE Quest",
+    desc: "Let's take a quick 1-minute visual tour of your rank companion. No complex text prompts required—the advisor operates automatically based on your behaviors.",
+    target: null,
+    tab: "overview"
+  },
+  {
+    heading: "Visual Stats Summary",
+    desc: "These glow meters track your daily study streaks, average accuracy, and syllabus coverage percentages in real-time.",
+    target: "#tour-overview-stats",
+    tab: "overview"
+  },
+  {
+    heading: "The Study Log Console",
+    desc: "After every study session, quickly log the subject, hours, and test accuracy here. The AI advisor uses this data to map your strengths and weaknesses.",
+    target: "#tour-work-log",
+    tab: "overview"
+  },
+  {
+    heading: "Deadlines & Official Feed",
+    desc: "This dashboard displays a live countdown timer to the exam and streams official syllabus adjustments and news announcements dynamically.",
+    target: "#tour-countdown",
+    tab: "overview"
+  },
+  {
+    heading: "Syllabus Checklist & Accuracy",
+    desc: "In the Syllabus page, check off topics as you finish them and move sliders to log test accuracies (0-100%). Click a subject to expand it.",
+    target: "#syllabus-accordion",
+    tab: "syllabus"
+  },
+  {
+    heading: "AI Veteran Advisor Card",
+    desc: "In the final page, review the Radar Chart and Heatmap. The AI Veteran Advisor lists your next 3 focus targets, detects comfort-zone study biases, and flags subjects undergoing memory decay.",
+    target: "#tour-advisor",
+    tab: "metrics"
+  }
+];
+
+function initOnboardingTour() {
+  const isTourCompleted = localStorage.getItem('gateQuest_tourCompleted');
+  if (isTourCompleted !== 'true') {
+    startTour();
+  }
+}
+
+function startTour() {
+  currentTourStep = 0;
+  onboardingOverlay.classList.add('active');
+  showTourStep(0);
+}
+
+function showTourStep(index) {
+  const step = tourSteps[index];
+  
+  // Clear any existing highlights
+  document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+  
+  // Switch to target tab
+  if (step.tab) {
+    switchTab(step.tab);
+  }
+  
+  // Setup text content
+  stepCounter.textContent = `STEP ${index + 1} OF ${tourSteps.length}`;
+  stepHeading.textContent = step.heading;
+  stepDesc.textContent = step.desc;
+  
+  // Highlight target element
+  if (step.target) {
+    const el = document.querySelector(step.target);
+    if (el) {
+      el.classList.add('tour-highlight');
+      // Scroll into view if needed
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+  
+  nextBtn.textContent = index === tourSteps.length - 1 ? "FINISH TOUR" : "NEXT STEP";
+}
+
+nextBtn.addEventListener('click', () => {
+  currentTourStep++;
+  if (currentTourStep < tourSteps.length) {
+    showTourStep(currentTourStep);
+  } else {
+    completeTour();
+  }
+});
+
+skipBtn.addEventListener('click', () => {
+  completeTour();
+});
+
+function completeTour() {
+  document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+  onboardingOverlay.classList.remove('active');
+  localStorage.setItem('gateQuest_tourCompleted', 'true');
+  switchTab('overview'); // Return to main page
+  showToast('TOUR COMPLETED', 'Welcome aboard! Log your study hours to initialize recommendations.', 'cyan');
+}
+
+// Reset tour trigger button in status bar
+const resetTourBtn = document.getElementById('reset-tour-btn');
+resetTourBtn.addEventListener('click', () => {
+  localStorage.removeItem('gateQuest_tourCompleted');
+  startTour();
+});
+
+// INITIAL APPLICATION LOAD
 document.addEventListener('DOMContentLoaded', () => {
   loadState();
   verifyStreakIntegrity();
@@ -1196,8 +1228,16 @@ document.addEventListener('DOMContentLoaded', () => {
   populateQuickLogDropdown();
   updateDashboardStats();
   
-  // Try online updates
-  if (navigator.onLine) {
-    syncTrendsOnline();
+  // Sync news online
+  syncBulletinOnline();
+  
+  // If not online, use offline countdown fallback from cached announcements
+  if (!navigator.onLine) {
+    const cached = localStorage.getItem('gateQuest_v2_bulletin');
+    if (cached) renderBulletinFeed(JSON.parse(cached));
+    else startCountdownClock("2027-02-06T09:00:00"); // hardcoded backup date
   }
+  
+  // Initialize Onboarding Tour
+  setTimeout(initOnboardingTour, 800);
 });
