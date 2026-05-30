@@ -1007,8 +1007,6 @@ function initCalmBreathingDeck() {
   }
 }
 
-  document.getElementById('accuracy-desc').textContent = accuracyDesc;
-}
 
 // AEGIS-ADAPTIVE ADVISOR ENGINE
 const prioritiesContainer = document.getElementById('advisor-priorities');
