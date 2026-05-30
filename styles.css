@@ -2298,3 +2298,245 @@ body {
   line-height: 1.4;
   max-width: 280px;
 }
+
+/* ==========================================
+   ARCADE STUDY HUB & TIMER STYLE
+   ========================================== */
+.hub-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.hub-tab-btn {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 0.75rem;
+  color: var(--navy);
+  background: #ffffff;
+  border: var(--brutal-border);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: var(--transition-bouncy);
+}
+
+.hub-tab-btn:hover {
+  background: var(--orange);
+  transform: translate(-2px, -2px);
+  box-shadow: 2px 2px 0px var(--navy);
+}
+
+.hub-tab-btn.active {
+  background: var(--navy);
+  color: #ffffff;
+  transform: none;
+  box-shadow: none;
+}
+
+.hub-tab-content {
+  display: none;
+}
+
+.hub-tab-content.active {
+  display: block;
+  animation: brutalReveal 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.timer-preset-btn {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 0.75rem;
+  color: var(--navy);
+  background: #ffffff;
+  border: 2px solid var(--navy);
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: var(--transition-bouncy);
+}
+
+.timer-preset-btn:hover, .timer-preset-btn.active {
+  background: var(--pink);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+/* Subtopic Selection Bubbles */
+.subtopic-bubble-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.bubble-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.subtopic-bubble {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--navy);
+  background: #ffffff;
+  border: 2px solid var(--navy);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: var(--transition-bouncy);
+}
+
+.subtopic-bubble:hover {
+  background: rgba(46, 196, 182, 0.1);
+  transform: translate(-1px, -1px);
+}
+
+.subtopic-bubble.selected {
+  background: var(--teal);
+  color: var(--navy);
+  transform: translate(-3px, -3px) rotate(1deg);
+  box-shadow: 3px 3px 0px var(--navy);
+  border-color: var(--navy);
+}
+
+/* ==========================================
+   STREAK FIRE & MULTIPLIER HUD
+   ========================================== */
+.streak-hud-widgets {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.streak-flame {
+  font-size: 1.5rem;
+  animation: flameFlicker 1s infinite ease-in-out;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.arcade-multiplier {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 0.7rem;
+  background: var(--navy);
+  color: #ffffff;
+  padding: 3px 6px;
+  border: 2px solid var(--navy);
+  box-shadow: 2px 2px 0px var(--orange);
+  transform: rotate(2deg);
+  letter-spacing: 0.05em;
+}
+
+@keyframes flameFlicker {
+  0% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px var(--orange)); }
+  25% { transform: scale(1.1) rotate(-3deg); filter: drop-shadow(0 0 4px var(--pink)); }
+  50% { transform: scale(1) rotate(3deg); filter: drop-shadow(0 0 2px var(--orange)); }
+  75% { transform: scale(1.15) rotate(-2deg); filter: drop-shadow(0 0 6px var(--orange)); }
+  100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px var(--orange)); }
+}
+
+/* Streak card color modes */
+.streak-card.streak-warm {
+  background-color: #FED7AA !important; /* Orange 200 */
+}
+.streak-card.streak-hot {
+  background-color: #FDBA74 !important; /* Orange 300 */
+  box-shadow: 10px 10px 0px var(--navy) !important;
+}
+.streak-card.streak-supernova {
+  background-color: #FCA5A5 !important; /* Red 300 */
+  animation: supernovaPulse 2s infinite ease-in-out;
+}
+
+@keyframes supernovaPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02) rotate(-0.5deg); }
+  100% { transform: scale(1); }
+}
+
+/* ==========================================
+   STREAK SHIELD INVENTORY
+   ========================================== */
+.shield-inventory {
+  display: flex;
+  gap: 8px;
+}
+
+.inventory-slot {
+  width: 32px;
+  height: 32px;
+  border: 3px dashed var(--navy);
+  background: rgba(15, 23, 42, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: var(--transition-bouncy);
+}
+
+.inventory-slot.filled {
+  border: 3px solid var(--navy);
+  background: var(--teal);
+  box-shadow: 2px 2px 0px var(--navy);
+  transform: scale(1.05);
+}
+
+.inventory-slot.filled::before {
+  content: '🛡️';
+  font-size: 1.1rem;
+  animation: shieldPulse 3s infinite ease-in-out;
+}
+
+@keyframes shieldPulse {
+  0% { transform: scale(0.9) rotate(-5deg); }
+  50% { transform: scale(1.1) rotate(5deg); }
+  100% { transform: scale(0.9) rotate(-5deg); }
+}
+
+/* ==========================================
+   AEGIS COGNITIVE CALM DECK STYLE
+   ========================================== */
+.breath-bubble {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 4px solid var(--navy);
+  box-shadow: 6px 6px 0px var(--navy);
+  background: var(--teal);
+  transform: scale(1);
+  transition: transform 1.5s ease-in-out, background-color 1.5s ease-in-out;
+  z-index: 1;
+}
+
+.breath-bubble.inhaling {
+  transform: scale(1.4);
+  background: radial-gradient(circle, var(--teal) 40%, #a7f3d0 100%);
+  animation: bubblePulse 4s infinite ease-in-out;
+}
+
+.breath-bubble.holding {
+  transform: scale(1.4);
+  background: radial-gradient(circle, var(--orange) 40%, #ffedd5 100%);
+}
+
+.breath-bubble.exhaling {
+  transform: scale(1);
+  background: radial-gradient(circle, var(--pink) 40%, #fecdd3 100%);
+  animation: bubblePulse 4s infinite ease-in-out;
+}
+
+.breath-phase-text {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-shadow: 1px 1px 0px #ffffff;
+}
+
+.breath-timer-count {
+  text-shadow: 1px 1px 0px #ffffff;
+}
+
+@keyframes bubblePulse {
+  0% { box-shadow: 6px 6px 0px var(--navy); }
+  50% { box-shadow: 10px 10px 0px var(--navy); }
+  100% { box-shadow: 6px 6px 0px var(--navy); }
+}

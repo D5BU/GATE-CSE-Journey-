@@ -68,10 +68,28 @@
     <div id="tab-overview" class="tab-content active">
       <div class="overview-grid" id="tour-overview-stats">
         <!-- Card 1: Study Streak -->
-        <div class="brutal-card streak-card card-orange">
-          <span class="card-label">ACTIVE STUDY STREAK</span>
-          <h3 class="card-value" id="streak-value">0 DAYS</h3>
-          <p class="card-desc" id="streak-desc">Log your study hours below to light up the streak!</p>
+        <div class="brutal-card streak-card card-orange" style="position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; min-height: 180px;">
+          <div class="streak-hud-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span class="card-label">ACTIVE STUDY STREAK</span>
+            <div class="streak-hud-widgets" style="display: flex; gap: 8px; align-items: center;">
+              <div class="streak-flame" id="streak-flame" title="Flame level indicator">🔥</div>
+              <div class="arcade-multiplier" id="arcade-multiplier">1.0x BOOST</div>
+            </div>
+          </div>
+          
+          <h3 class="card-value" id="streak-value" style="margin-top: 10px; margin-bottom: 10px;">0 DAYS</h3>
+          
+          <!-- Shield Slots Inventory -->
+          <div class="shield-inventory-area" style="margin-top: 5px;">
+            <div class="shield-inventory-label" style="font-family: var(--font-display); font-size: 0.65rem; font-weight: 900; letter-spacing: 0.05em; color: var(--navy); margin-bottom: 6px;">STREAK SHIELDS (EARNED)</div>
+            <div class="shield-inventory" id="shield-inventory" style="display: flex; gap: 8px;" title="Shields protect your streak from resetting. Earn them by studying 3 days in a row or logging 85%+ accuracy.">
+              <div class="inventory-slot" data-slot="0"></div>
+              <div class="inventory-slot" data-slot="1"></div>
+              <div class="inventory-slot" data-slot="2"></div>
+            </div>
+          </div>
+          
+          <p class="card-desc" id="streak-desc" style="margin-top: 8px; font-size: 0.75rem;">Log your study hours below to light up the streak!</p>
         </div>
 
         <!-- Card 2: Syllabus Mastery -->
@@ -94,25 +112,81 @@
         
         <!-- Left: Quick Work Log & Focus Cam -->
         <div class="overview-left-column">
-          <!-- Quick Work Log -->
-          <div class="brutal-card overview-actions" id="tour-work-log">
-            <span class="card-label">QUICK WORK LOG</span>
-            <div class="quick-log-row">
-              <div class="log-field">
-                <label for="log-subject">Select Subject</label>
-                <select id="log-subject" class="brutal-select"></select>
+          <!-- Quick Work Log (Dual Study Hub) -->
+          <div class="brutal-card overview-actions" id="tour-work-log" style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="hub-header-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 3px solid var(--navy); padding-bottom: 12px;">
+              <span class="card-label" style="margin-bottom: 0;">STUDY HUB</span>
+              <div class="hub-tabs" style="display: flex; gap: 8px;">
+                <button class="hub-tab-btn active" id="tab-timer-btn">TIMER</button>
+                <button class="hub-tab-btn" id="tab-manual-btn">MANUAL</button>
               </div>
-              <div class="log-field-group">
-                <div class="log-field">
-                  <label for="log-hours">Study (Hours)</label>
-                  <input type="number" id="log-hours" class="brutal-input" min="0.1" step="0.1" value="1.0">
+            </div>
+
+            <!-- Subject Select (Global) -->
+            <div class="log-field">
+              <label for="log-subject" style="display: block; margin-bottom: 6px; font-family: var(--font-display); font-size: 0.75rem; font-weight: 900;">TARGET SUBJECT</label>
+              <select id="log-subject" class="brutal-select" style="width: 100%;"></select>
+            </div>
+
+            <!-- TAB 1: FOCUS TIMER -->
+            <div id="hub-timer-content" class="hub-tab-content active">
+              <div class="timer-layout" style="display: flex; align-items: center; gap: 20px; justify-content: space-between;">
+                <div class="timer-visual-area">
+                  <div class="timer-dial-wrapper" style="position: relative; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="timer-canvas" width="120" height="120" style="position: absolute; top:0; left:0;"></canvas>
+                    <div class="timer-digits" id="timer-digits" style="font-family: var(--font-display); font-weight: 900; font-size: 1.6rem; color: var(--navy); z-index: 2; -webkit-text-stroke: 1px var(--navy); text-shadow: 2px 2px 0px rgba(255,255,255,0.8);">25:00</div>
+                  </div>
                 </div>
-                <div class="log-field">
-                  <label for="log-accuracy">Accuracy (%)</label>
-                  <input type="number" id="log-accuracy" class="brutal-input" min="0" max="100" value="70">
+                <div class="timer-controls" style="display: flex; flex-direction: column; gap: 10px; flex: 1;">
+                  <div class="timer-preset-row" style="display: flex; gap: 4px; justify-content: space-between; flex-wrap: wrap;">
+                    <button class="timer-preset-btn active" data-time="25">25M</button>
+                    <button class="timer-preset-btn" data-time="45">45M</button>
+                    <button class="timer-preset-btn" data-time="60">60M</button>
+                    <button class="timer-preset-btn" data-time="1">1M (TEST)</button>
+                  </div>
+                  <div class="timer-action-buttons" style="display: flex; gap: 6px;">
+                    <button class="brutal-btn btn-teal" id="timer-start-btn" style="flex: 1; padding: 10px 0; font-size: 0.9rem;">ENGAGE</button>
+                    <button class="brutal-btn btn-orange" id="timer-pause-btn" style="display:none; flex: 1; padding: 10px 0; font-size: 0.9rem;">HOLD</button>
+                    <button class="brutal-btn btn-pink" id="timer-reset-btn" style="flex: 1; padding: 10px 0; font-size: 0.9rem;">RESET</button>
+                  </div>
                 </div>
               </div>
-              <button class="brutal-btn btn-teal" id="save-log-btn">LOG SESSION</button>
+              
+              <!-- Timer Completion Log (Revealed on session complete) -->
+              <div id="timer-completion-form" style="display: none; margin-top: 15px; border-top: 3px dashed var(--navy); padding-top: 15px;">
+                <span class="card-label" style="color: var(--pink); font-size: 0.7rem; margin-bottom: 8px; display: block;">SESSION DONE! SAVE PYQ ACCURACY</span>
+                <div class="timer-log-fields" style="display: flex; align-items: center; gap: 10px;">
+                  <div class="log-field" style="flex: 1;">
+                    <input type="number" id="timer-accuracy-input" class="brutal-input" min="0" max="100" value="80" style="width: 100%; padding: 8px;">
+                  </div>
+                  <button class="brutal-btn btn-teal" id="timer-log-session-btn" style="padding: 10px 16px;">SAVE</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: MANUAL LOG -->
+            <div id="hub-manual-content" class="hub-tab-content" style="display: none;">
+              <div class="quick-log-row" style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="log-field-group" style="display: flex; gap: 12px;">
+                  <div class="log-field" style="flex: 1;">
+                    <label for="log-hours" style="display: block; margin-bottom: 4px; font-size: 0.7rem; font-weight: 700;">STUDY HOURS</label>
+                    <input type="number" id="log-hours" class="brutal-input" min="0.1" step="0.1" value="1.0" style="width: 100%;">
+                  </div>
+                  <div class="log-field" style="flex: 1;">
+                    <label for="log-accuracy" style="display: block; margin-bottom: 4px; font-size: 0.7rem; font-weight: 700;">ACCURACY (%)</label>
+                    <input type="number" id="log-accuracy" class="brutal-input" min="0" max="100" value="70" style="width: 100%;">
+                  </div>
+                </div>
+                <button class="brutal-btn btn-teal" id="save-log-btn" style="width: 100%; padding: 12px 0;">LOG SESSION</button>
+              </div>
+            </div>
+
+            <!-- Subtopic Bubble Tag Drawer -->
+            <div class="subtopic-bubble-section" style="border-top: 3px solid var(--navy); padding-top: 12px; margin-top: 5px;">
+              <label style="display: block; font-family: var(--font-display); font-size: 0.75rem; font-weight: 900; margin-bottom: 10px;">SELECT SYLLABUS CELL (SUB-TOPIC)</label>
+              <div class="bubble-grid" id="subtopic-bubble-grid" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <!-- Populated dynamically via app.js -->
+              </div>
             </div>
           </div>
 
@@ -196,6 +270,41 @@
             </div>
           </div>
         </div>
+
+          </div>
+        </div>
+
+        <!-- AEGIS COGNITIVE CALM DECK (Breathing Calm) -->
+        <section class="calm-deck brutal-card brutal-reveal" id="tour-calm-deck" style="margin-top: 40px; margin-bottom: 40px; padding: 30px;">
+          <span class="card-label" style="margin-bottom: 15px; display: block;">AEGIS COGNITIVE CALM DECK</span>
+          <div class="calm-deck-body" style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; align-items: center;">
+            <div class="calm-left-control" style="display: flex; flex-direction: column; gap: 15px;">
+              <h3 class="calm-title font-display" style="font-size: 1.8rem; font-weight: 900; line-height: 1; margin-bottom: 5px;">PANIC CONTROLLER</h3>
+              <p class="card-desc" style="font-size: 0.9rem; color: #475569; line-height: 1.4; max-width: 360px;">Suppress stress responses and stabilize cortisol spikes during high-intensity practice blocks. Follow the expanding visual guidance.</p>
+              
+              <div class="calm-selector-group" style="display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 320px;">
+                <label for="breath-mode" style="font-family: var(--font-display); font-size: 0.75rem; font-weight: 900;">BREATHING METHOD</label>
+                <select id="breath-mode" class="brutal-select" style="width: 100%;">
+                  <option value="box">Box Breathing (4-4-4-4) - Focus Boost</option>
+                  <option value="calm">Calming Breath (4-7-8) - Panic Stopper</option>
+                  <option value="equal">Equal Breathing (5-5) - Equilibrate</option>
+                </select>
+              </div>
+              
+              <button class="brutal-btn btn-teal" id="start-breath-btn" style="width: fit-content; padding: 12px 24px; font-size: 0.95rem;">START CALM ENGINE</button>
+            </div>
+            
+            <div class="calm-right-visualizer" style="display: flex; justify-content: center; align-items: center; min-height: 180px;">
+              <div class="breath-bubble-wrapper" style="position: relative; width: 160px; height: 160px; display: flex; align-items: center; justify-content: center;">
+                <div class="breath-bubble" id="breath-bubble"></div>
+                <div class="breath-content-area" style="position: absolute; z-index: 5; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; pointer-events: none;">
+                  <div class="breath-phase-text font-display" id="breath-phase-text" style="font-size: 1.1rem; font-weight: 900; color: var(--navy); -webkit-text-stroke: 0.5px #ffffff;">READY</div>
+                  <div class="breath-timer-count" id="breath-timer-count" style="font-family: var(--font-accent); font-weight: 700; font-size: 1.5rem; color: var(--navy); line-height: 1;">--</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <!-- PROCESS SECTION -->
         <section class="process-section brutal-reveal" id="tour-process">

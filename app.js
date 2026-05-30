@@ -205,6 +205,37 @@ let userProgress = {};
 let pyqScores = {};    
 let studyLogs = [];    
 let studyStreak = { count: 0, lastStudyDate: null };
+let streakShields = 0; // Capped at 3
+let selectedSubtopicIndex = -1;
+
+// POMODORO TIMER STATE
+let timerSecondsTotal = 25 * 60;
+let timerSecondsRemaining = 25 * 60;
+let timerInterval = null;
+let timerActive = false;
+
+// BREATHING CALM DECK STATE
+let breathActive = false;
+let breathInterval = null;
+let breathPhaseIndex = 0;
+let breathSecondsInPhase = 0;
+const BREATH_PATTERNS = {
+  box: [
+    { phase: "INHALE", duration: 4, className: "inhaling" },
+    { phase: "HOLD", duration: 4, className: "holding" },
+    { phase: "EXHALE", duration: 4, className: "exhaling" },
+    { phase: "HOLD", duration: 4, className: "holding" }
+  ],
+  calm: [
+    { phase: "INHALE", duration: 4, className: "inhaling" },
+    { phase: "HOLD", duration: 7, className: "holding" },
+    { phase: "EXHALE", duration: 8, className: "exhaling" }
+  ],
+  equal: [
+    { phase: "INHALE", duration: 5, className: "inhaling" },
+    { phase: "EXHALE", duration: 5, className: "exhaling" }
+  ]
+};
 
 // LOAD & SAVE STATE
 function loadState() {
@@ -212,11 +243,13 @@ function loadState() {
   const scores = localStorage.getItem('gateQuest_pyqScores_v2');
   const logs = localStorage.getItem('gateQuest_studyLogs_v2');
   const streak = localStorage.getItem('gateQuest_streak');
+  const shields = localStorage.getItem('gateQuest_streakShields');
 
   if (progress) userProgress = JSON.parse(progress);
   if (scores) pyqScores = JSON.parse(scores);
   if (logs) studyLogs = JSON.parse(logs);
   if (streak) studyStreak = JSON.parse(streak);
+  if (shields) streakShields = parseInt(shields) || 0;
 }
 
 function saveState() {
@@ -224,6 +257,7 @@ function saveState() {
   localStorage.setItem('gateQuest_pyqScores_v2', JSON.stringify(pyqScores));
   localStorage.setItem('gateQuest_studyLogs_v2', JSON.stringify(studyLogs));
   localStorage.setItem('gateQuest_streak', JSON.stringify(studyStreak));
+  localStorage.setItem('gateQuest_streakShields', streakShields.toString());
 }
 
 // NAVIGATION TABS
@@ -465,6 +499,24 @@ saveLogBtn.addEventListener('click', () => {
   const dateStr = now.toISOString().split('T')[0];
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   
+  // Check if a subtopic bubble is selected
+  let subtopicLoggedText = '';
+  if (selectedSubtopicIndex !== -1) {
+    const key = `${subId}:${selectedSubtopicIndex}`;
+    userProgress[key] = true;
+    
+    if (!pyqScores[key]) pyqScores[key] = [];
+    pyqScores[key].push({
+      score: accuracy,
+      timestamp: now.toISOString()
+    });
+    
+    const subjectObj = SUBJECTS.find(s => s.id === subId);
+    subtopicLoggedText = ` Target: "${subjectObj.topics[selectedSubtopicIndex]}"`;
+    
+    generateSyllabusAccordion(); 
+  }
+  
   // Save log
   studyLogs.push({
     date: dateStr,
@@ -477,11 +529,22 @@ saveLogBtn.addEventListener('click', () => {
   // Update study streak
   updateStreak(dateStr);
   
+  // Award Streak Shield if accuracy is >= 85
+  if (accuracy >= 85) {
+    if (streakShields < 3) {
+      streakShields++;
+      showToast('SHIELD EARNED', '85%+ accuracy logged. You earned a Streak Shield!', 'lime');
+    }
+  }
+  
   saveState();
   updateDashboardStats();
   
   const subjectName = SUBJECTS.find(s => s.id === subId).name;
-  showToast('SESSION LOGGED', `Logged ${hours} hrs of ${subjectName} with ${accuracy}% accuracy.`, 'lime');
+  showToast('SESSION LOGGED', `Logged ${hours} hrs of ${subjectName} with ${accuracy}% accuracy.${subtopicLoggedText}`, 'lime');
+  
+  // Regenerate subtopic bubbles to refresh checked status
+  generateSubtopicBubbles(subId);
   
   // Reset logs
   logHoursInput.value = '1.0';
@@ -490,6 +553,7 @@ saveLogBtn.addEventListener('click', () => {
 
 // STREAK MANAGEMENT
 function updateStreak(todayDateStr) {
+  let initialStreak = studyStreak.count;
   if (!studyStreak.lastStudyDate) {
     studyStreak.count = 1;
   } else {
@@ -505,6 +569,14 @@ function updateStreak(todayDateStr) {
     }
   }
   studyStreak.lastStudyDate = todayDateStr;
+  
+  // Award shield for 3-day streak increments
+  if (studyStreak.count > initialStreak && studyStreak.count % 3 === 0) {
+    if (streakShields < 3) {
+      streakShields++;
+      showToast('SHIELD EARNED', `${studyStreak.count}-day study streak! Streak Shield awarded.`, 'lime');
+    }
+  }
 }
 
 function verifyStreakIntegrity() {
@@ -516,8 +588,19 @@ function verifyStreakIntegrity() {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
   if (diffDays > 1) {
-    studyStreak.count = 0;
-    saveState();
+    if (streakShields > 0) {
+      streakShields--;
+      // Set lastStudyDate to yesterday so that if they study today, it continues the streak
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      studyStreak.lastStudyDate = yesterday.toISOString().split('T')[0];
+      saveState();
+      showToast('SHIELD CONSUMED', 'Missed day protected! Streak Shield consumed to preserve streak.', 'orange');
+    } else {
+      studyStreak.count = 0;
+      saveState();
+      showToast('STREAK LOST', 'Missed study day detected. Streak reset to 0.', 'pink');
+    }
   }
 }
 
@@ -570,6 +653,360 @@ function updateDashboardStats() {
     accuracyDesc = 'Masterclass performance! Maintain this consistency.';
     document.getElementById('accuracy-value').style.color = 'var(--teal)';
   }
+  document.getElementById('accuracy-desc').textContent = accuracyDesc;
+  updateStreakVisuals();
+  renderStreakShields();
+}
+
+// STREAK & SHIELD RENDERING HELPERS
+function updateStreakVisuals() {
+  const streakVal = studyStreak.count;
+  const flameEl = document.getElementById('streak-flame');
+  const multiplierEl = document.getElementById('arcade-multiplier');
+  const streakCard = document.querySelector('.streak-card');
+  
+  if (!streakCard || !flameEl || !multiplierEl) return;
+  
+  // Reset streak card classes
+  streakCard.classList.remove('streak-warm', 'streak-hot', 'streak-supernova');
+  
+  let multiplier = '1.0x BOOST';
+  if (streakVal >= 10) {
+    multiplier = '2.0x BOOST';
+    streakCard.classList.add('streak-supernova');
+    flameEl.textContent = '💥';
+  } else if (streakVal >= 6) {
+    multiplier = '1.6x BOOST';
+    streakCard.classList.add('streak-hot');
+    flameEl.textContent = '🔥';
+  } else if (streakVal >= 3) {
+    multiplier = '1.3x BOOST';
+    streakCard.classList.add('streak-warm');
+    flameEl.textContent = '🔥';
+  } else {
+    flameEl.textContent = '🔥';
+  }
+  
+  multiplierEl.textContent = multiplier;
+}
+
+function renderStreakShields() {
+  const slots = document.querySelectorAll('.inventory-slot');
+  slots.forEach((slot, idx) => {
+    if (idx < streakShields) {
+      slot.classList.add('filled');
+      slot.title = "Streak Shield Active!";
+    } else {
+      slot.classList.remove('filled');
+      slot.title = "Empty Shield Slot";
+    }
+  });
+}
+
+// SUBTOPIC BUBBLE GENERATOR
+function generateSubtopicBubbles(subjectId) {
+  const grid = document.getElementById('subtopic-bubble-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const subject = SUBJECTS.find(s => s.id === subjectId);
+  if (!subject) return;
+
+  subject.topics.forEach((topic, index) => {
+    const bubble = document.createElement('div');
+    bubble.className = 'subtopic-bubble';
+    bubble.textContent = topic;
+    bubble.dataset.idx = index;
+    bubble.dataset.subject = subjectId;
+    
+    const key = `${subjectId}:${index}`;
+    if (userProgress[key]) {
+      bubble.style.borderStyle = 'dashed';
+      bubble.title = "Completed Topic";
+    }
+
+    bubble.addEventListener('click', () => {
+      if (bubble.classList.contains('selected')) {
+        bubble.classList.remove('selected');
+        selectedSubtopicIndex = -1;
+      } else {
+        grid.querySelectorAll('.subtopic-bubble').forEach(b => b.classList.remove('selected'));
+        bubble.classList.add('selected');
+        selectedSubtopicIndex = index;
+      }
+    });
+
+    grid.appendChild(bubble);
+  });
+  
+  selectedSubtopicIndex = -1;
+}
+
+// STUDY HUB TAB TOGGLE
+function initStudyHubTabs() {
+  const timerTabBtn = document.getElementById('tab-timer-btn');
+  const manualTabBtn = document.getElementById('tab-manual-btn');
+  const timerContent = document.getElementById('hub-timer-content');
+  const manualContent = document.getElementById('hub-manual-content');
+  
+  if (!timerTabBtn) return;
+  
+  timerTabBtn.addEventListener('click', () => {
+    timerTabBtn.classList.add('active');
+    manualTabBtn.classList.remove('active');
+    timerContent.style.display = 'block';
+    manualContent.style.display = 'none';
+  });
+  
+  manualTabBtn.addEventListener('click', () => {
+    manualTabBtn.classList.add('active');
+    timerTabBtn.classList.remove('active');
+    manualContent.style.display = 'block';
+    timerContent.style.display = 'none';
+  });
+}
+
+// CANVAS DRAW TIMER DIAL
+function drawTimerCanvas() {
+  const canvas = document.getElementById('timer-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width;
+  const center = size / 2;
+  const radius = size / 2 - 8;
+  
+  ctx.clearRect(0, 0, size, size);
+  
+  // Draw background track
+  ctx.beginPath();
+  ctx.arc(center, center, radius, 0, 2 * Math.PI);
+  ctx.strokeStyle = 'rgba(15, 23, 42, 0.08)';
+  ctx.lineWidth = 10;
+  ctx.stroke();
+  
+  // Draw remaining progress
+  if (timerSecondsTotal > 0) {
+    const ratio = timerSecondsRemaining / timerSecondsTotal;
+    ctx.beginPath();
+    ctx.arc(center, center, radius, -Math.PI / 2, -Math.PI / 2 + (2 * Math.PI * ratio), false);
+    ctx.strokeStyle = '#FF3366'; // Pink
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    
+    // Draw outer boundary lines
+    ctx.beginPath();
+    ctx.arc(center, center, radius + 5, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#0F172A';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    
+    ctx.beginPath();
+    ctx.arc(center, center, radius - 5, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#0F172A';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+}
+
+// POMODORO TIMER CORE
+function initPomodoroTimer() {
+  const startBtn = document.getElementById('timer-start-btn');
+  const pauseBtn = document.getElementById('timer-pause-btn');
+  const resetBtn = document.getElementById('timer-reset-btn');
+  const timerDigits = document.getElementById('timer-digits');
+  const completionForm = document.getElementById('timer-completion-form');
+  const logSessionBtn = document.getElementById('timer-log-session-btn');
+  const accuracyInput = document.getElementById('timer-accuracy-input');
+  
+  if (!startBtn) return;
+  
+  const presetBtns = document.querySelectorAll('.timer-preset-btn');
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (timerActive) return;
+      presetBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      const mins = parseInt(btn.dataset.time);
+      timerSecondsTotal = mins * 60;
+      timerSecondsRemaining = timerSecondsTotal;
+      
+      updateTimerDigits();
+      drawTimerCanvas();
+      completionForm.style.display = 'none';
+    });
+  });
+  
+  startBtn.addEventListener('click', () => {
+    if (timerActive) return;
+    timerActive = true;
+    startBtn.style.display = 'none';
+    pauseBtn.style.display = 'inline-block';
+    completionForm.style.display = 'none';
+    
+    timerInterval = setInterval(() => {
+      if (timerSecondsRemaining > 0) {
+        timerSecondsRemaining--;
+        updateTimerDigits();
+        drawTimerCanvas();
+      } else {
+        clearInterval(timerInterval);
+        timerActive = false;
+        startBtn.style.display = 'inline-block';
+        pauseBtn.style.display = 'none';
+        
+        playAlertSound();
+        completionForm.style.display = 'block';
+        showToast('SESSION COMPLETE', 'Focus time completed! Log your PYQ accuracy score.', 'lime');
+      }
+    }, 1000);
+  });
+  
+  pauseBtn.addEventListener('click', () => {
+    if (!timerActive) return;
+    clearInterval(timerInterval);
+    timerActive = false;
+    startBtn.style.display = 'inline-block';
+    pauseBtn.style.display = 'none';
+  });
+  
+  resetBtn.addEventListener('click', () => {
+    clearInterval(timerInterval);
+    timerActive = false;
+    timerSecondsRemaining = timerSecondsTotal;
+    startBtn.style.display = 'inline-block';
+    pauseBtn.style.display = 'none';
+    completionForm.style.display = 'none';
+    updateTimerDigits();
+    drawTimerCanvas();
+  });
+  
+  logSessionBtn.addEventListener('click', () => {
+    const subId = logSubjectSelect.value;
+    const accuracy = parseInt(accuracyInput.value) || 0;
+    const hours = parseFloat((timerSecondsTotal / 3600).toFixed(2));
+    
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    let subtopicLoggedText = '';
+    if (selectedSubtopicIndex !== -1) {
+      const key = `${subId}:${selectedSubtopicIndex}`;
+      userProgress[key] = true;
+      
+      if (!pyqScores[key]) pyqScores[key] = [];
+      pyqScores[key].push({
+        score: accuracy,
+        timestamp: now.toISOString()
+      });
+      
+      const subjectObj = SUBJECTS.find(s => s.id === subId);
+      subtopicLoggedText = ` Target: "${subjectObj.topics[selectedSubtopicIndex]}"`;
+      
+      generateSyllabusAccordion(); 
+    }
+    
+    // Save log
+    studyLogs.push({
+      date: dateStr,
+      time: timeStr,
+      subjectId: subId,
+      hours: hours,
+      accuracy: accuracy
+    });
+    
+    updateStreak(dateStr);
+    
+    if (accuracy >= 85) {
+      if (streakShields < 3) {
+        streakShields++;
+        showToast('SHIELD EARNED', '85%+ accuracy logged. You earned a Streak Shield!', 'lime');
+      }
+    }
+    
+    saveState();
+    updateDashboardStats();
+    
+    const subjectName = SUBJECTS.find(s => s.id === subId).name;
+    showToast('SESSION LOGGED', `Logged timer session (${hours} hrs) for ${subjectName} with ${accuracy}% accuracy.${subtopicLoggedText}`, 'lime');
+    
+    completionForm.style.display = 'none';
+    timerSecondsRemaining = timerSecondsTotal;
+    updateTimerDigits();
+    drawTimerCanvas();
+    generateSubtopicBubbles(subId);
+  });
+  
+  function updateTimerDigits() {
+    const mins = Math.floor(timerSecondsRemaining / 60);
+    const secs = timerSecondsRemaining % 60;
+    timerDigits.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+  
+  drawTimerCanvas();
+}
+
+// AEGIS COGNITIVE CALM DECK BREATHING ENGINE
+function initCalmBreathingDeck() {
+  const startBtn = document.getElementById('start-breath-btn');
+  const modeSelect = document.getElementById('breath-mode');
+  const bubble = document.getElementById('breath-bubble');
+  const phaseText = document.getElementById('breath-phase-text');
+  const timerCount = document.getElementById('breath-timer-count');
+  
+  if (!startBtn) return;
+  
+  startBtn.addEventListener('click', () => {
+    if (breathActive) {
+      clearInterval(breathInterval);
+      breathActive = false;
+      
+      startBtn.textContent = 'START CALM ENGINE';
+      startBtn.className = 'brutal-btn btn-teal';
+      
+      bubble.className = 'breath-bubble';
+      phaseText.textContent = 'READY';
+      timerCount.textContent = '--';
+      showToast('ZEN STOPPED', 'Cortisol stabilizer deactivated.', 'pink');
+    } else {
+      breathActive = true;
+      startBtn.textContent = 'STOP CALM ENGINE';
+      startBtn.className = 'brutal-btn btn-pink';
+      
+      const patternKey = modeSelect.value;
+      const pattern = BREATH_PATTERNS[patternKey] || BREATH_PATTERNS.box;
+      
+      breathPhaseIndex = 0;
+      breathSecondsInPhase = pattern[0].duration;
+      
+      updateBreathingUI(pattern);
+      
+      breathInterval = setInterval(() => {
+        breathSecondsInPhase--;
+        
+        if (breathSecondsInPhase <= 0) {
+          breathPhaseIndex = (breathPhaseIndex + 1) % pattern.length;
+          breathSecondsInPhase = pattern[breathPhaseIndex].duration;
+        }
+        
+        updateBreathingUI(pattern);
+      }, 1000);
+      
+      showToast('ZEN ENGAGED', 'Suppressing cortisol spikes. Follow the guide.', 'cyan');
+    }
+  });
+  
+  function updateBreathingUI(pattern) {
+    const currentPhase = pattern[breathPhaseIndex];
+    phaseText.textContent = currentPhase.phase;
+    timerCount.textContent = breathSecondsInPhase;
+    
+    bubble.className = 'breath-bubble';
+    bubble.classList.add(currentPhase.className);
+  }
+}
+
   document.getElementById('accuracy-desc').textContent = accuracyDesc;
 }
 
@@ -1535,6 +1972,15 @@ document.addEventListener('DOMContentLoaded', () => {
   generateSyllabusAccordion();
   populateQuickLogDropdown();
   updateDashboardStats();
+  
+  initStudyHubTabs();
+  initPomodoroTimer();
+  initCalmBreathingDeck();
+  generateSubtopicBubbles(logSubjectSelect.value);
+  
+  logSubjectSelect.addEventListener('change', () => {
+    generateSubtopicBubbles(logSubjectSelect.value);
+  });
   
   syncBulletinOnline();
   
