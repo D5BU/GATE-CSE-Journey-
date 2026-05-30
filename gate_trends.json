@@ -1,0 +1,159 @@
+{
+  "version": "2026.1",
+  "lastUpdated": "2026-05-30",
+  "subjects": [
+    {
+      "id": "Discrete_Mathematics",
+      "name": "Discrete Mathematics",
+      "weightage": 8,
+      "color": "#ff2d55",
+      "topics": [
+        "Propositional & First-Order Logic",
+        "Sets, Relations, Functions, Lattices",
+        "Groups and Monoids",
+        "Graph Theory (Connectivity, Matching, Coloring)",
+        "Combinatorics (Counting, Recurrences, Generating Functions)"
+      ]
+    },
+    {
+      "id": "Engineering_Mathematics",
+      "name": "Engineering Mathematics",
+      "weightage": 5,
+      "color": "#ff2d55",
+      "topics": [
+        "Linear Algebra (Matrices, Eigenvalues, LU Decomposition)",
+        "Calculus (Limits, Continuity, Mean Value Theorem, Max-Min)",
+        "Probability & Statistics (Conditional Prob, Bayes, Uniform/Normal/Poisson)"
+      ]
+    },
+    {
+      "id": "Digital_Logic",
+      "name": "Digital Logic",
+      "weightage": 5,
+      "color": "#00f2ff",
+      "topics": [
+        "Boolean Algebra & Minimization",
+        "Combinational Circuits (Multiplexers, Decoders)",
+        "Sequential Circuits (Flip-flops, Registers, Counters)",
+        "Number Representation & Computer Arithmetic"
+      ]
+    },
+    {
+      "id": "Computer_Organization_Architecture",
+      "name": "Computer Organization & Architecture",
+      "weightage": 7,
+      "color": "#00f2ff",
+      "topics": [
+        "Machine Instructions & Addressing Modes",
+        "ALU, Data Path & Control Unit",
+        "Instruction Pipelining & Hazards",
+        "Memory Hierarchy (Cache, Main Memory, Virtual Memory)",
+        "I/O Interfaces & DMA"
+      ]
+    },
+    {
+      "id": "Data_Structures",
+      "name": "Data Structures",
+      "weightage": 7,
+      "color": "#c1ff72",
+      "topics": [
+        "Programming in C (Pointers, Scope, Parameter passing)",
+        "Recursion & Complexity Analysis",
+        "Arrays, Stacks, Queues, Linked Lists",
+        "Trees, Binary Search Trees, Binary Heaps",
+        "Graph Representations"
+      ]
+    },
+    {
+      "id": "Algorithms",
+      "name": "Algorithms",
+      "weightage": 7,
+      "color": "#c1ff72",
+      "topics": [
+        "Asymptotic Complexity & Sorting/Searching",
+        "Divide and Conquer & Greedy Algorithms",
+        "Dynamic Programming",
+        "Graph Traversals (BFS, DFS, Minimum Spanning Trees)",
+        "Shortest Path Algorithms"
+      ]
+    },
+    {
+      "id": "Theory_of_Computation",
+      "name": "Theory of Computation",
+      "weightage": 9,
+      "color": "#ff2d55",
+      "topics": [
+        "Regular Languages, Finite Automata, Regular Expressions",
+        "Context-Free Languages, Grammars, Pushdown Automata",
+        "Turing Machines & Chomsky Hierarchy",
+        "Undecidability & Halting Problem"
+      ]
+    },
+    {
+      "id": "Compiler_Design",
+      "name": "Compiler Design",
+      "weightage": 4,
+      "color": "#00f2ff",
+      "topics": [
+        "Lexical Analysis & DFA construction",
+        "Syntax Analysis (LL(1), LR, LALR Parsers)",
+        "Syntax-Directed Translation & SDD/SDT",
+        "Intermediate Code Generation (Three-address code, Static Single Assignment)",
+        "Runtime Environments"
+      ]
+    },
+    {
+      "id": "Operating_Systems",
+      "name": "Operating Systems",
+      "weightage": 9,
+      "color": "#00f2ff",
+      "topics": [
+        "System Calls, Processes & Threads",
+        "CPU Scheduling Algorithms",
+        "Process Synchronization, Semaphores & Mutexes",
+        "Deadlocks (Prevention, Avoidance, Detection)",
+        "Memory Management (Paging, Segmentation, Page Replacement)",
+        "File Systems & Disk Scheduling"
+      ]
+    },
+    {
+      "id": "Database_Management_Systems",
+      "name": "Database Management Systems",
+      "weightage": 7,
+      "color": "#c1ff72",
+      "topics": [
+        "ER-to-Relational Mapping & Relational Algebra/Calculus",
+        "SQL Queries & Relational Constraints",
+        "Normalization & Normal Forms (1NF, 2NF, 3NF, BCNF)",
+        "Transaction Serializability & Concurrency Control (2PL, Timestamping)",
+        "File Indexing (B & B+ Trees)"
+      ]
+    },
+    {
+      "id": "Computer_Networks",
+      "name": "Computer Networks",
+      "weightage": 9,
+      "color": "#ff2d55",
+      "topics": [
+        "OSI & TCP/IP Reference Models",
+        "Data Link Protocol (Framing, Flow & Error Control, Sliding Window)",
+        "Medium Access Control (CSMA/CD, Token Ring, Wi-Fi)",
+        "Routing Protocols & IP Addressing (IPv4, IPv6, CIDR Subnetting)",
+        "Transport Layer (TCP, UDP, Congestion Control)",
+        "Application Layer Protocols (DNS, SMTP, HTTP, FTP)"
+      ]
+    },
+    {
+      "id": "General_Aptitude",
+      "name": "General Aptitude",
+      "weightage": 15,
+      "color": "#c1ff72",
+      "topics": [
+        "Quantitative Aptitude (Ratio, Percentage, Permutations, Probability, Geometry)",
+        "Verbal Aptitude (Grammar, Vocabulary, Comprehension)",
+        "Analytical Aptitude (Logical deductions, Relationships)",
+        "Spatial Aptitude (Shape matching, 2D/3D visual rotations)"
+      ]
+    }
+  ]
+}

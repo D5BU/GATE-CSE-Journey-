@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GATE Quest — Veteran Progress Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ff2d55">
+  <meta name="description" content="Premium offline-first progress tracker and local AI coach for GATE Computer Science preparation.">
+</head>
+<body>
+  <!-- Animated Background Mesh Shapes -->
+  <div class="bg-shape shape-pink"></div>
+  <div class="bg-shape shape-cyan"></div>
+  <div class="bg-shape shape-lime"></div>
+
+  <!-- Header Area -->
+  <header class="header">
+    <div class="logo-area">
+      <div class="logo-box">
+        <span class="logo-dot"></span>
+      </div>
+      <span class="logo-text">GATE QUEST</span>
+    </div>
+    <nav class="nav-links">
+      <button class="nav-btn active" data-tab="overview">OVERVIEW</button>
+      <button class="nav-btn" data-tab="syllabus">SYLLABUS</button>
+      <button class="nav-btn" data-tab="metrics">METRICS</button>
+      <button class="nav-btn" data-tab="coach">AI COACH</button>
+    </nav>
+    <button class="icon-nav-btn" id="install-btn" title="Install Offline PWA">
+      <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- Hero Branding Section -->
+    <section class="hero-section">
+      <div class="shimmer-badge">
+        <span class="badge-text">OFFLINE-FIRST GATE CSE COMPANION</span>
+      </div>
+      <h1 class="hero-title">GATE QUEST</h1>
+      <div class="subtitle-row">
+        <div class="sub-line"></div>
+        <h2 class="hero-subtitle">VETERAN MENTORSHIP ENGINE</h2>
+        <div class="sub-line"></div>
+      </div>
+    </section>
+
+    <!-- SECTION: OVERVIEW -->
+    <div id="tab-overview" class="tab-content active">
+      <div class="overview-grid">
+        <!-- Card 1: Study Streak -->
+        <div class="glass-card streak-card" data-accent="pink">
+          <div class="card-icon-container">
+            <svg class="card-icon icon-pink" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+          <span class="card-label">CURRENT STUDY STREAK</span>
+          <h3 class="card-value" id="streak-value">0 DAYS</h3>
+          <p class="card-desc" id="streak-desc">Keep studying daily to maintain your momentum.</p>
+        </div>
+
+        <!-- Card 2: Syllabus Mastery -->
+        <div class="glass-card progress-card" data-accent="cyan">
+          <div class="card-icon-container">
+            <svg class="card-icon icon-cyan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx='12' cy='12' r='10'/>
+              <path d='M12 2a10 10 0 0 1 10 10'/>
+            </svg>
+          </div>
+          <span class="card-label">SYLLABUS COMPLETION</span>
+          <h3 class="card-value" id="progress-value">0.0%</h3>
+          <p class="card-desc" id="progress-desc">0 of 0 topics checked off.</p>
+        </div>
+
+        <!-- Card 3: Avg Accuracy -->
+        <div class="glass-card accuracy-card" data-accent="lime">
+          <div class="card-icon-container">
+            <svg class="card-icon icon-lime" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="m9 12 2 2 4-4"/>
+            </svg>
+          </div>
+          <span class="card-label">PYQ ACCURACY SCORE</span>
+          <h3 class="card-value" id="accuracy-value">0%</h3>
+          <p class="card-desc" id="accuracy-desc">Log your scores inside the syllabus tab.</p>
+        </div>
+
+        <!-- Card 4: Next Focus Topic -->
+        <div class="glass-card focus-card" data-accent="pink">
+          <div class="card-icon-container">
+            <svg class="card-icon icon-pink" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <circle cx="12" cy="12" r="6"/>
+              <circle cx="12" cy="12" r="2"/>
+            </svg>
+          </div>
+          <span class="card-label">AI RECOMMENDED FOCUS</span>
+          <h3 class="card-value text-glow-pink" id="focus-value" style="font-size: 1.5rem; word-break: break-word;">NOT AVAIL</h3>
+          <p class="card-desc" id="focus-desc">Analyzing metrics...</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Logs -->
+      <div class="glass-card overview-actions">
+        <span class="card-label">QUICK WORK LOG</span>
+        <div class="quick-log-row">
+          <div class="log-field">
+            <label for="log-subject">Subject</label>
+            <select id="log-subject" class="glass-select"></select>
+          </div>
+          <div class="log-field">
+            <label for="log-hours">Study Time (Hours)</label>
+            <input type="number" id="log-hours" class="glass-input" min="0.1" step="0.1" value="1.0">
+          </div>
+          <button class="btn btn-primary" id="save-log-btn">LOG SESSION</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: SYLLABUS -->
+    <div id="tab-syllabus" class="tab-content">
+      <div class="section-header-row">
+        <span class="section-label">SUBJECTS ACCORDION</span>
+        <p class="section-desc">Log your progress on topics and practice performance on Previous Year Questions (PYQs).</p>
+      </div>
+      <div id="syllabus-accordion" class="accordion-container">
+        <!-- Populated dynamically via app.js -->
+      </div>
+    </div>
+
+    <!-- SECTION: METRICS -->
+    <div id="tab-metrics" class="tab-content">
+      <div class="metrics-container">
+        <!-- Left: Weakness Radar Chart -->
+        <div class="glass-card chart-card">
+          <span class="card-label">WEAKNESS RADAR & SUBJECT WEIGHTS</span>
+          <div class="canvas-container">
+            <canvas id="radarChart" width="400" height="400"></canvas>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item"><span class="legend-color color-pink"></span> Subject Weight (Marks)</div>
+            <div class="legend-item"><span class="legend-color color-cyan"></span> Your Mastery Level (%)</div>
+          </div>
+        </div>
+
+        <!-- Right: Consistency Heatmap -->
+        <div class="glass-card chart-card">
+          <span class="card-label">STUDY CONSISTENCY HEATMAP</span>
+          <div class="canvas-container">
+            <canvas id="heatmap" width="550" height="150"></canvas>
+          </div>
+          <p class="card-desc" style="text-align: center; margin-top: 10px;">
+            Heatmap highlights your daily study hours over the past weeks. Consistency builds rank.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: AI COACH -->
+    <div id="tab-coach" class="tab-content">
+      <div class="coach-container">
+        <div class="glass-card coach-console">
+          <div class="console-header">
+            <div class="console-dots">
+              <span class="dot-red"></span>
+              <span class="dot-yellow"></span>
+              <span class="dot-green"></span>
+            </div>
+            <span class="console-title">VETERAN COACH LOG</span>
+            <button class="console-clear-btn" id="clear-console-btn">CLEAR</button>
+          </div>
+          <div class="console-body" id="console-logs">
+            <!-- Simulated dialogs populate here -->
+            <div class="console-line system-line">
+              <span class="prefix">[SYSTEM]:</span> GATE Quest Offline AI Engine initialized. Type <span class="highlight-cyan">/help</span> or ask a question in the command bar.
+            </div>
+            <div class="console-line coach-line">
+              <span class="prefix">[VETERAN_COACH]:</span> Welcome aspirant. I am your GATE veteran advisor. I analyze your subject weightages, study streak, and topic accuracy to guide you in maximizing your rank. Enter <span class="highlight-pink">/focus</span> to get your target priority list.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Bottom Floating Command Bar -->
+  <footer class="footer-command-bar">
+    <div class="command-bar-container">
+      <div class="command-input-wrapper">
+        <input type="text" id="command-input" placeholder="Ask Veteran Coach (e.g. /focus, /streak, DBMS accuracy, or study advice)..." class="command-input">
+      </div>
+      <button class="command-zap-btn" id="command-zap-btn" title="Trigger Veteran AI Advice">
+        <svg class="zap-icon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 10V3L4 14H11V21L20 10H13Z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="status-row">
+      <span class="status-item">LATENCY: <span id="status-latency">1.2ms</span></span>
+      <span class="status-item">NODE: <span id="status-node">OFFLINE-LOCAL</span></span>
+      <span class="status-item active-status"><span class="pulse-dot"></span> STATUS: STABLE</span>
+    </div>
+  </footer>
+
+  <!-- Subtle Bottom Designer Credit -->
+  <div class="designer-credit">
+    MADE BY KARTIK
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
