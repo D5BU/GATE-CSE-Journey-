@@ -79,7 +79,8 @@ body {
 }
 
 .logo-box {
-  width: 36px;
+  width: auto;
+  min-width: 36px;
   height: 36px;
   background-color: var(--orange);
   border: var(--brutal-border);
@@ -87,6 +88,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 0 8px;
   transition: var(--transition-bouncy);
 }
 
@@ -95,11 +97,19 @@ body {
   background-color: var(--pink);
 }
 
-.logo-dot {
-  width: 6px;
-  height: 6px;
-  background-color: var(--navy);
-  border-radius: 50%;
+.logo-symbol-text {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 0.85rem;
+  color: var(--navy);
+  letter-spacing: -0.02em;
+}
+
+.logo-row-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .logo-text {

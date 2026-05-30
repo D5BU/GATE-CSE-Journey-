@@ -1417,7 +1417,13 @@ function processWebcamFrame() {
   if (classificationFunction && window.pico) {
     // RUN REAL FACE DETECTION VIA PICO.JS
     const gray = rgbaToGrayscale(rgba, height, width);
-    const dets = window.pico.run_cascade(gray, classificationFunction, {
+    const image = {
+      pixels: gray,
+      nrows: height,
+      ncols: width,
+      ldim: width
+    };
+    const dets = window.pico.run_cascade(image, classificationFunction, {
       shiftfactor: 0.1,
       minsize: 24,
       scalefactor: 1.1
